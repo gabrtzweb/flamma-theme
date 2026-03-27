@@ -1,0 +1,309 @@
+
+
+{%- liquid
+  assign product_ref = closest.product | default: product
+  assign limit = block.settings.thumb_limit
+  assign ratio_setting = block.settings.image_ratio
+  assign thumb_width = block.settings.thumb_width
+  
+  case ratio_setting
+    when 'portrait'
+      assign aspect_ratio = '4 / 5'
+    when 'square'
+      assign aspect_ratio = '1 / 1'
+    when 'landscape'
+      assign aspect_ratio = '16 / 9'
+    else
+      assign aspect_ratio = 'auto'
+  endcase
+
+  assign pt = block.settings.padding-block-start
+  assign pb = block.settings.padding-block-end
+  assign pl = block.settings.padding-inline-start
+  assign pr = block.settings.padding-inline-end
+  assign thumbs_gap = 6
+-%}
+
+{%- if product_ref.media.size > 0 -%}
+  <div class="thumbs-root" {{ block.shopify_attributes }}
+       style="
+         padding-top: {{ pt }}px;
+         padding-bottom: {{ pb }}px;
+         padding-left: {{ pl }}px;
+         padding-right: {{ pr }}px;
+         --thumbs-limit: {{ limit }};
+         --thumbs-gap: {{ thumbs_gap }}px;
+         --thumb-width: {{ thumb_width }}px;
+       ">
+    
+    <div class="thumbs-wrapper">
+      {%- for media in product_ref.media limit: limit -%}
+        <div class="thumb-item"
+             style="
+               {% render 'border-override', settings: block.settings %}
+               aspect-ratio: {{ aspect_ratio }};
+             "
+             data-target-src="{{ media | image_url: width: 800 }}"
+             aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+             
+             onclick="
+               event.preventDefault();
+               event.stopPropagation();
+               
+               const card = this.closest('.product-card') || this.closest('.resource-list__item');
+               if(!card) return;
+               const mainImg = card.querySelector('img.product-card__image') || card.querySelector('img[data-main-image]') || card.querySelector('img');
+               
+               if(mainImg) {
+                 const newSrc = this.getAttribute('data-target-src');
+                 mainImg.setAttribute('data-base-src', newSrc);
+                 mainImg.srcset = newSrc;
+                 mainImg.src = newSrc;
+               }
+
+               this.parentNode.querySelectorAll('.thumb-item').forEach(el => el.setAttribute('aria-selected', 'false'));
+               
+               this.setAttribute('aria-selected', 'true');
+             "
+
+             onmouseenter="
+               const card = this.closest('.product-card') || this.closest('.resource-list__item');
+               if(!card) return;
+               const mainImg = card.querySelector('img.product-card__image') || card.querySelector('img[data-main-image]') || card.querySelector('img');
+               
+               if(mainImg) {
+                 if (!mainImg.hasAttribute('data-base-src')) {
+                    mainImg.setAttribute('data-base-src', mainImg.currentSrc || mainImg.src);
+                 }
+                 
+                 const newSrc = this.getAttribute('data-target-src');
+                 mainImg.srcset = newSrc;
+                 mainImg.src = newSrc;
+               }
+             "
+
+             onmouseleave="
+               const card = this.closest('.product-card') || this.closest('.resource-list__item');
+               if(!card) return;
+               const mainImg = card.querySelector('img.product-card__image') || card.querySelector('img[data-main-image]') || card.querySelector('img');
+               
+               if(mainImg && mainImg.hasAttribute('data-base-src')) {
+                  const baseSrc = mainImg.getAttribute('data-base-src');
+                  mainImg.srcset = baseSrc;
+                  mainImg.src = baseSrc;
+               }
+             ">
+          
+          {{ media | image_url: width: 100 | image_tag: loading: 'lazy', class: 'thumb-image' }}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .thumbs-root {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px; 
+  }
+
+  .thumbs-wrapper {
+    display: flex;
+    gap: var(--thumbs-gap);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px;
+  }
+  .thumbs-wrapper::-webkit-scrollbar { display: none; }
+
+  .thumb-item {
+    flex: 0 0 var(--thumb-width);
+    width: var(--thumb-width);
+    position: relative;
+    cursor: pointer;
+    box-sizing: border-box;
+    border: var(--border-width) var(--border-style) var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: visible !important; 
+    transition: opacity 0.2s ease;
+  }
+
+  .thumb-item .thumb-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit; 
+  }
+
+  .thumb-item:hover {
+    opacity: 0.8;
+  }
+
+  .thumb-item:is([aria-selected=true]) {
+    outline: var(--focus-outline-width, 2px) solid currentColor;
+    outline-offset: calc(var(--focus-outline-offset, 2px) / 2);
+    border: var(--border-width) solid var(--border-color);
+    opacity: 1;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:content.thumbnails",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:content.resource_reference_product_media"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "t:options.auto"
+        },
+        {
+          "value": "portrait",
+          "label": "t:options.portrait"
+        },
+        {
+          "value": "square",
+          "label": "t:options.square"
+        },
+        {
+          "value": "landscape",
+          "label": "t:options.landscape"
+        }
+      ],
+      "default": "portrait",
+      "label": "t:settings.aspect_ratio",
+      "info": "t:info.aspect_ratio_adjusted"
+    },
+    {
+      "type": "range",
+      "id": "thumb_limit",
+      "label": "t:names.quantity",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "t:content.borders"
+    },
+    {
+      "type": "select",
+      "id": "border",
+      "label": "t:settings.style",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.none"
+        },
+        {
+          "value": "solid",
+          "label": "t:options.solid"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.thickness",
+      "default": 1,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "t:settings.opacity",
+      "default": 100,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "thumb_width",
+      "label": "t:settings.width_desktop",
+      "min": 44,
+      "max": 72,
+      "step": 1,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "t:settings.border_radius",
+      "min": 0,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:content.thumbnails",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

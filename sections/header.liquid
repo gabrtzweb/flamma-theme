@@ -1,5 +1,3 @@
-
-
 {% liquid
   assign order = 'logo,menu,localization,search,drawer_search,actions'
 
@@ -92,7 +90,7 @@
     endif
   endif
   capture search
-    render 'search', style: search_style, class: search_class, display_style: section.settings.actions_display_style
+    render 'search', style: search_style, class: search_class, display_style: section.settings.actions_display_style, search_design: section.settings.search_design, search_bar_max_width: section.settings.search_bar_max_width
   endcapture
 
   # Skip drawer search under specific conditions:
@@ -106,7 +104,7 @@
   if section.settings.search_row == 'bottom' or search_style != 'none' and skip_drawer_search == false
     # Mobile search duplicate for when search is not in the right order for mobile layout
     capture drawer_search
-      render 'search', class: 'search-action--hidden-on-menu', style: search_style, display_style: section.settings.actions_display_style
+      render 'search', class: 'search-action--hidden-on-menu', style: search_style, display_style: section.settings.actions_display_style, search_design: section.settings.search_design, search_bar_max_width: section.settings.search_bar_max_width
     endcapture
   endif
 
@@ -132,11 +130,13 @@
     endif
   endif
 
-  if section.settings.show_country or section.settings.show_language
-    if section.settings.localization_row == 'bottom'
-      assign bottom_row_blocks = bottom_row_blocks | append: 'localization,'
+  unless section.settings.hide_localization_on_desktop
+    if section.settings.show_country or section.settings.show_language
+      if section.settings.localization_row == 'bottom'
+        assign bottom_row_blocks = bottom_row_blocks | append: 'localization,'
+      endif
     endif
-  endif
+  endunless
 
   assign bottom_row_blocks = bottom_row_blocks | split: ',' | compact
 
@@ -184,6 +184,7 @@
 %}
 
 {% capture localization_markup %}
+  {% unless section.settings.hide_localization_on_desktop %}
   {% liquid
     assign localization_font = '--menu-localization-font: var(--font-[localization_font]--family); ' | replace: '[localization_font]', section.settings.localization_font
     assign localization_font_size = '--menu-localization-font-size: [localization_font_size]; ' | replace: '[localization_font_size]', section.settings.localization_font_size
@@ -275,6 +276,7 @@
       </div>
     </dropdown-localization-component>
   {% endif %}
+  {% endunless %}
 {% endcapture %}
 
 <script type="application/ld+json">
@@ -292,6 +294,7 @@
 <header-component
   id="header-component"
   class="{{ class }}"
+  data-search-design="{{ section.settings.search_design }}"
   data-theme-color="rgb({{ section.settings.color_scheme_top.settings.background.rgb }})"
   {% if transparent %}
     transparent="{{ transparent }}"
@@ -393,6 +396,8 @@
       {{ navigation_bar }}
     </div>
   {% endif %}
+
+  {%- render 'ssl-verification' -%}
 </header-component>
 
 <script
@@ -1213,6 +1218,34 @@
     },
     {
       "type": "select",
+      "id": "search_design",
+      "label": "t:flamma.design",
+      "options": [
+        {
+          "value": "search_icon",
+          "label": "t:settings.icon"
+        },
+        {
+          "value": "search_bar",
+          "label": "t:flamma.search_bar"
+        }
+      ],
+      "default": "search_icon",
+      "visible_if": "{{ section.settings.show_search }}"
+    },
+    {
+      "type": "range",
+      "id": "search_bar_max_width",
+      "label": "t:settings.custom_width",
+      "min": 160,
+      "max": 640,
+      "step": 16,
+      "unit": "px",
+      "default": 320,
+      "visible_if": "{{ section.settings.search_design == 'search_bar' }}"
+    },
+    {
+      "type": "select",
       "id": "search_position",
       "label": "t:settings.search_position",
       "options": [
@@ -1269,6 +1302,14 @@
       "label": "t:settings.language_selector",
       "info": "t:info.manage_languages",
       "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_localization_on_desktop",
+      "label": "t:flamma.hide_localization",
+      "info": "t:flamma.localization_info",
+      "default": true,
+      "visible_if": "{{ section.settings.show_country or section.settings.show_language }}"
     },
     {
       "type": "select",
@@ -1356,6 +1397,20 @@
       ],
       "default": "top",
       "visible_if": "{{ section.settings.show_country or section.settings.show_language }}"
+    },
+    {
+      "type": "header",
+      "content": "t:text_defaults.cart"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:flamma.manage_cart"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_cart_label",
+      "label": "t:flamma.show_label",
+      "default": true
     },
     {
       "type": "header",

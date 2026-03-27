@@ -1,0 +1,360 @@
+
+
+{% liquid
+  assign block_settings = block.settings
+  assign product = closest.product
+
+  if request.visual_preview_mode and product == blank
+    assign product = collections.all.products.first
+  endif
+
+  capture block_classes
+    echo 'price-installments ' | append: block_settings.type_preset
+    if block_settings.type_preset == 'custom'
+      echo ' custom-typography'
+    endif
+  endcapture
+
+  assign remove_padding = false
+  if block_settings.show_icon == false and block_settings.remove_padding_no_icon
+    assign remove_padding = true
+  endif
+%}
+
+{%- if product and product.price > 0 -%}
+  {%- assign installment_price = product.price | divided_by: block_settings.installments_number -%}
+
+  <div
+    class="{{ block_classes }} spacing-style"
+    style="{% render 'spacing-style', settings: block_settings %}"
+    {{ block.shopify_attributes }}
+  >
+    <div
+      class="
+        price-installments__wrapper
+        {% if block_settings.inherit_color_scheme == false %}color-{{ block_settings.color_scheme }}{% else %}color-inherit{% endif %}
+        {% if remove_padding %}price-installments__wrapper--no-padding{% endif %}
+      "
+      style="
+        --border-radius: {{ block_settings.border_radius }}px;
+        --border-width: {{ block_settings.border_width }}px;
+        --border-color: {{ block_settings.border_color }};
+        {% render 'typography-style', settings: block_settings %}
+      "
+    >
+      {%- if block_settings.show_icon -%}
+        <div class="price-installments__icon" style="--icon-size: {{ block_settings.icon_size }}px;">
+          {%- if block_settings.custom_icon != blank -%}
+            {{ block_settings.custom_icon }}
+          {%- else -%}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+            </svg>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      <div class="price-installments__text">
+        {{ block_settings.prefix_text }}
+        <strong class="price-installments__amount">{{ installment_price | money }}</strong>
+        {{ block_settings.middle_text }}
+        <strong class="price-installments__amount">{{ block_settings.installments_number }}x</strong>
+        {{ block.settings.suffix_text }}
+      </div>
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .price-installments__wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 1.2rem;
+    border-radius: var(--border-radius);
+    line-height: 1.4;
+    border: var(--border-width) solid var(--border-color);
+  }
+  .price-installments__wrapper--no-padding {
+    padding: 0;
+  }
+  .price-installments__wrapper.color-inherit {
+    background-color: transparent;
+    color: inherit;
+  }
+  .price-installments__wrapper.color-inherit .price-installments__icon {
+    fill: currentColor;
+  }
+  .price-installments__wrapper:not(.color-inherit) .price-installments__text,
+  .price-installments__wrapper:not(.color-inherit) .price-installments__icon {
+    color: var(--color-foreground);
+  }
+  .price-installments__wrapper.color-background-1:not(.color-inherit),
+  .price-installments__wrapper.color-background-2:not(.color-inherit),
+  .price-installments__wrapper.color-accent-1:not(.color-inherit),
+  .price-installments__wrapper.color-accent-2:not(.color-inherit) {
+    background-color: var(--color-background);
+  }
+  .price-installments__icon {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+  .price-installments__icon svg {
+    width: 100%;
+    height: 100%;
+  }
+  .price-installments__wrapper .price-installments__amount {
+    font-weight: var(--font-weight-bold);
+  }
+  .price-installments.custom-typography .price-installments__wrapper {
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    letter-spacing: var(--letter-spacing);
+    text-transform: var(--case);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:flamma.price_installments",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "installments_number",
+      "min": 2,
+      "max": 24,
+      "step": 1,
+      "label": "t:flamma.installments_count",
+      "default": 10
+    },
+    {
+      "type": "text",
+      "id": "prefix_text",
+      "label": "t:flamma.prefix_text",
+      "default": "ou"
+    },
+    {
+      "type": "text",
+      "id": "middle_text",
+      "label": "t:flamma.middle_text",
+      "default": "de"
+    },
+    {
+      "type": "text",
+      "id": "suffix_text",
+      "label": "t:flamma.suffix_text",
+      "default": "sem juros"
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "checkbox",
+      "id": "inherit_color_scheme",
+      "label": "t:settings.inherit_color_scheme",
+      "default": false
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "visible_if": "{{ block.settings.inherit_color_scheme == false }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon",
+      "label": "t:flamma.show_icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "remove_padding_no_icon",
+      "label": "t:flamma.remove_padding_no_icon.label",
+      "info": "t:flamma.remove_padding_no_icon.info",
+      "default": false,
+      "visible_if": "{{ block.settings.show_icon == false }}"
+    },
+    {
+      "type": "html",
+      "id": "custom_icon",
+      "label": "t:flamma.custom_icon",
+      "visible_if": "{{ block.settings.show_icon == true }}"
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "min": 16,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "t:flamma.icon_size",
+      "default": 24,
+      "visible_if": "{{ block.settings.show_icon == true }}"
+    },
+    {
+      "type": "header",
+      "content": "t:settings.borders"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.border_radius",
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.border_width",
+      "default": 1
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "t:flamma.border_color",
+      "default": "#0000001A"
+    },
+    {
+      "type": "header",
+      "content": "t:content.typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        { "value": "paragraph", "label": "t:options.paragraph" },
+        { "value": "h1", "label": "t:options.h1" },
+        { "value": "h2", "label": "t:options.h2" },
+        { "value": "h3", "label": "t:options.h3" },
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" },
+        { "value": "custom", "label": "t:options.custom" }
+      ],
+      "default": "paragraph"
+    },
+    {
+      "type": "select",
+      "id": "font",
+      "label": "t:settings.font",
+      "options": [
+        { "value": "var(--font-body--family)", "label": "t:options.body" },
+        { "value": "var(--font-subheading--family)", "label": "t:options.subheading" },
+        { "value": "var(--font-heading--family)", "label": "t:options.heading" },
+        { "value": "var(--font-accent--family)", "label": "t:options.accent" }
+      ],
+      "default": "var(--font-body--family)",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.size",
+      "default": 16,
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "line_height",
+      "label": "t:settings.line_height",
+      "options": [
+        { "value": "1", "label": "t:options.tight" },
+        { "value": "1.5", "label": "t:options.normal" },
+        { "value": "2", "label": "t:options.loose" }
+      ],
+      "default": "1.5",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "letter_spacing",
+      "label": "t:settings.letter_spacing",
+      "options": [
+        { "value": "-0.05em", "label": "t:options.tight" },
+        { "value": "0", "label": "t:options.normal" },
+        { "value": "0.1em", "label": "t:options.loose" }
+      ],
+      "default": "0",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "case",
+      "label": "t:settings.case",
+      "options": [
+        { "value": "none", "label": "t:options.default" },
+        { "value": "uppercase", "label": "t:options.uppercase" }
+      ],
+      "default": "none",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:flamma.price_installments",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

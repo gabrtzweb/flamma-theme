@@ -1,0 +1,184 @@
+
+
+{% liquid
+  assign block_settings = block.settings
+  assign product = closest.product
+
+  if request.visual_preview_mode and product == blank
+    assign product = collections.all.products.first
+  endif
+
+  assign custom_tag_1 = settings.custom_badge_1_tag | downcase | strip
+  assign custom_text_1 = settings.custom_badge_1_text
+  assign custom_tag_2 = settings.custom_badge_2_tag | downcase | strip
+  assign custom_text_2 = settings.custom_badge_2_text
+%}
+
+<div class="discount-badges-wrapper justify-{{ block_settings.alignment }}" {{ block.shopify_attributes }}>
+  {%- if product.compare_at_price > product.price -%}
+    <div
+      class="discount-badges {{ block_settings.type_preset }} color-{{ block_settings.color_scheme }}"
+      style="--border-radius: {{ block_settings.border_radius }}px;"
+    >
+      {%- if block.settings.discount_type == 'percentage' -%}
+        {%- assign discount_percentage = product.compare_at_price
+          | minus: product.price
+          | times: 100
+          | divided_by: product.compare_at_price
+          | round
+        -%}
+        {{- discount_percentage -}}
+        {{- block.settings.percentage_suffix -}}
+      {%- else -%}
+        {%- assign discount_amount = product.compare_at_price | minus: product.price -%}
+        {{- block.settings.currency_symbol -}}
+        {{- discount_amount | money_without_currency | strip -}}
+        {{- block.settings.amount_suffix -}}
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- for tag in product.tags -%}
+    {%- liquid
+      assign current_tag = tag | downcase | strip
+    -%}
+
+    {%- if custom_tag_1 != blank and custom_text_1 != blank and current_tag == custom_tag_1 -%}
+      <div
+        class="discount-badges {{ block_settings.type_preset }} color-{{ settings.first_tag_badge_color }}"
+        style="--border-radius: {{ block_settings.border_radius }}px;"
+      >
+        {{ custom_text_1 }}
+      </div>
+    {%- endif -%}
+
+    {%- if custom_tag_2 != blank and custom_text_2 != blank and current_tag == custom_tag_2 -%}
+      <div
+        class="discount-badges {{ block_settings.type_preset }} color-{{ settings.second_tag_badge_color }}"
+        style="--border-radius: {{ block_settings.border_radius }}px;"
+      >
+        {{ custom_text_2 }}
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+</div>
+
+{% stylesheet %}
+  .discount-badges-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .discount-badges-wrapper .discount-badges {
+    --badge-font-size: var(--font-size--xs);
+    display: inline-block;
+    padding-block: var(--badge-rectangle-padding-block);
+    padding-inline: var(--badge-rectangle-padding-inline);
+    text-align: center;
+    white-space: nowrap;
+    color: var(--color-foreground);
+    background: var(--color-background);
+    font-size: var(--badge-font-size);
+    font-family: var(--badge-font-family);
+    font-weight: var(--badge-font-weight);
+    text-transform: var(--badge-text-transform);
+    border-radius: var(--border-radius);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:flamma.discount_badges",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:flamma.discount_type"
+    },
+    {
+      "type": "select",
+      "id": "discount_type",
+      "label": "t:flamma.display_as",
+      "options": [
+        {
+          "value": "percentage",
+          "label": "t:flamma.percentage"
+        },
+        {
+          "value": "amount",
+          "label": "t:flamma.amount"
+        }
+      ],
+      "default": "percentage"
+    },
+    {
+      "type": "text",
+      "id": "percentage_suffix",
+      "label": "t:flamma.percentage_suffix",
+      "default": "% OFF"
+    },
+    {
+      "type": "text",
+      "id": "currency_symbol",
+      "label": "t:flamma.currency_symbol",
+      "default": "R$"
+    },
+    {
+      "type": "text",
+      "id": "amount_suffix",
+      "label": "t:flamma.amount_suffix",
+      "default": " OFF"
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.border_radius",
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "t:content.typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        { "value": "paragraph", "label": "t:options.paragraph" },
+        { "value": "h1", "label": "t:options.h1" },
+        { "value": "h2", "label": "t:options.h2" },
+        { "value": "h3", "label": "t:options.h3" },
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" }
+      ],
+      "default": "paragraph"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:settings.alignment",
+      "default": "left"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:flamma.discount_badges",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

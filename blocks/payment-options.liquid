@@ -1,7 +1,8 @@
+
+
 {%- liquid
   assign block_settings = block.settings
   assign product_resource = closest.product
-  assign selected_variant = product_resource.selected_or_first_available_variant
 -%}
 
 {% liquid
@@ -25,17 +26,19 @@
         echo ' custom-color'
       endif
     endif
+    
     if block_settings.background
-      echo ' text-block--background'
+      echo ' payment-background' 
     endif
+    
     if is_rte
       echo ' rte'
     endif
   endcapture
 %}
 
-<product-price
-  class="text-block {{ text_block_classes }} text-{{ block_settings.alignment }} {{ block_settings.type_preset | default: 'paragraph' }} spacing-style"
+<div 
+  class="text-block {{ text_block_classes }} text-{{ block_settings.alignment }} {{ block_settings.type_preset | default: 'paragraph' }} spacing-style border-style"
   data-block-id="{{ block.id }}"
   data-product-id="{{ product_resource.id }}"
   style="
@@ -45,145 +48,107 @@
   "
   {{ block.shopify_attributes }}
 >
-  {% render 'price',
-    show_unit_price: true,
-    product_resource: product_resource,
-    show_sale_price_first: block_settings.show_sale_price_first,
-    custom_installments: block_settings.custom_installments,
-    custom_installment_count: block_settings.custom_installment_count,
-    custom_installment_interest: block_settings.custom_installment_interest
-  %}
+  <button
+    type="button"
+    class="link payment-trigger-btn{% if block_settings.background %} payment-background{% endif %} border-style"
+    on:click="#payment-modal/showDialog"
+    aria-haspopup="dialog"
+    style="      
+      {% render 'border-override', settings: block_settings %}
+      {% if block_settings.background %}
+        --text-background-color: {{ block_settings.background_color | default: 'rgb(255 255 255 / 1.0)' }};
+      {% endif %}
+    "
+  >
+    <span>
+        {{- 'icon-plus.svg' | inline_asset_content -}}
+    </span> {{ 'flamma.payment_options' | t }}
+  </button>
+</div>
 
-  {% if block_settings.show_tax_info %}
-    <div class="tax-note">
-      {%- if cart.duties_included and cart.taxes_included -%}
-        {{ 'content.duties_and_taxes_included' | t }}
-      {%- elsif cart.taxes_included -%}
-        {{ 'content.taxes_included' | t }}
-      {%- elsif cart.duties_included -%}
-        {{ 'content.duties_included' | t }}
-      {%- endif -%}
+{% render 'payment-modal', 
+   settings: block.settings, 
+   unique_id: block.id,
+   product: product_resource
+%}
 
-      {%- if shop.shipping_policy.body != blank -%}
-        {{ 'content.shipping_policy' | t }}
-      {%- endif -%}
-    </div>
-  {% endif %}
-
-  {%- if selected_variant != blank and block_settings.show_installments -%}
-    <div class="installments">
-      {%- assign product_form_installment_id = 'product-form-installment-' | append: block.id -%}
-      {%- form 'product', product_resource, id: product_form_installment_id, class: 'payment-terms' -%}
-        <input
-          type="hidden"
-          name="id"
-          value="{{ selected_variant.id }}"
-        >
-        {{ form | payment_terms }}
-      {%- endform -%}
-    </div>
-  {%- endif -%}
-</product-price>
-
-{% # theme-check-disable %}
 {% stylesheet %}
-  .tax-note:empty {
-    display: none;
+  .payment-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent; 
+    color: currentColor; 
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.2s, transform 0.1s;
+    padding: max(var(--padding-2xs) + var(--padding-xs) * (1 - cos(45deg)));
+    min-height: 40px !important;
+    height: 40px !important;
   }
 
-  form.payment-terms {
-    padding-top: 0.5em;
-    font-size: min(0.85em, var(--font-paragraph--size));
-    font-weight: var(--font-paragraph--weight);
-    color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text));
+  .payment-trigger-btn:hover {
+    opacity: 0.8;
+    color: var(--color-foreground) !important;
+  }
+  
+  .payment-trigger-btn:active {
+    transform: scale(0.98);
   }
 
-  .installments:not(:has(shopify-payment-terms)) {
-    display: none;
+  .payment-trigger-btn svg {
+    width: 12px;
+    height: 12px;
   }
 
-  /* Volume pricing note should match unit-price styling (small, grey text) */
-  product-price .volume-pricing-note,
-  product-price.text-block:is(.h1, .h2, .h3, .h4, .h5, .h6) .volume-pricing-note {
-    display: block;
-    font-family: var(--font-body--family);
-    font-weight: normal;
-    font-size: var(--font-size--xs);
-    line-height: normal;
-    letter-spacing: normal;
-    text-transform: none;
-    color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text));
+  .payment-background {
+    background-color: var(--text-background-color);
+  }
+  
+  button.link.payment-trigger-btn.payment-background.border-style{
+    height: 40px !important;
   }
 {% endstylesheet %}
 
 {% schema %}
 {
-  "name": "t:names.product_price",
+  "name": "t:flamma.payment_options",
   "tag": null,
   "settings": [
     {
       "type": "paragraph",
-      "content": "t:content.resource_reference_product_price"
+      "content": "t:flamma.resource_reference_payment_options"
     },
     {
-      "type": "paragraph",
-      "content": "t:content.edit_price_in_theme_settings"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_sale_price_first",
-      "label": "t:settings.show_sale_price_first",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_installments",
-      "label": "t:settings.installments",
-      "default": false
-    },
-
-    {
-      "type": "checkbox",
-      "id": "show_tax_info",
-      "label": "t:settings.show_tax_info",
-      "default": false
+      "type": "range",
+      "id": "installments_quantity",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "label": "t:flamma.installments_quantity",
+      "default": 10
     },
     {
       "type": "checkbox",
-      "id": "custom_installments",
-      "label": "t:flamma.custom_installments",
+      "id": "show_pix",
+      "label": "t:flamma.show_pix",
       "default": true
     },
     {
       "type": "range",
-      "id": "custom_installment_count",
-      "label": "t:flamma.installments_count",
-      "min": 2,
-      "max": 12,
+      "id": "pix_discount",
+      "min": 0,
+      "max": 25,
       "step": 1,
-      "default": 12,
-      "visible_if": "{{ block.settings.custom_installments }}"
+      "label": "t:flamma.pix_discount",
+      "default": 10
     },
     {
-      "type": "select",
-      "id": "custom_installment_interest",
-      "label": "t:flamma.installments_interest",
-      "options": [
-        {
-          "value": "without_interest",
-          "label": "t:flamma.without_interest"
-        },
-        {
-          "value": "with_interest",
-          "label": "t:flamma.with_interest"
-        },
-        {
-          "value": "none",
-          "label": "t:options.none"
-        }
-      ],
-      "default": "none",
-      "visible_if": "{{ block.settings.custom_installments }}"
+      "type": "checkbox",
+      "id": "show_boleto",
+      "label": "t:flamma.show_boleto",
+      "default": true
     },
     {
       "type": "header",
@@ -440,6 +405,72 @@
     },
     {
       "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "checkbox",
+      "id": "background",
+      "label": "t:settings.background",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "alpha": true,
+      "default": "#E9F4F2",
+      "visible_if": "{{ block.settings.background }}"
+    },
+    {
+      "type": "select",
+      "id": "border",
+      "label": "t:settings.border",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.none"
+        },
+        {
+          "value": "solid",
+          "label": "t:options.solid"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 10,
+      "step": 0.5,
+      "unit": "px",
+      "label": "t:settings.border_width",
+      "default": 1,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "t:settings.border_opacity",
+      "default": 100,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "t:settings.corner_radius",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
       "content": "t:content.padding"
     },
     {
@@ -485,10 +516,9 @@
   ],
   "presets": [
     {
-      "name": "t:names.product_price",
+      "name": "t:flamma.payment_options",
       "category": "t:categories.product"
     }
   ]
 }
 {% endschema %}
-{% # theme-check-enable %}

@@ -1,0 +1,504 @@
+<script
+  src="{{ 'dialog.js' | asset_url }}"
+  type="module"
+></script>
+
+<dialog-component
+  id="payment-modal"
+  class="payment-modal"
+  {{ block.shopify_attributes }}
+>
+  <dialog
+    ref="dialog"
+    on:click="/closeDialogOnClickOutside"
+    on:keydown="/closeDialogOnEscapePress"
+    class="payment-modal__content dialog-modal"
+    scroll-lock
+    aria-labelledby="payment-modal-heading"
+  >
+    <div class="payment-modal__header">
+      <h2 
+        id="payment-modal-heading" 
+        class="payment-modal__title"
+      >
+       {{ 'flamma.payment_options' | t }}
+      </h2>
+      <button
+        type="button"
+        class="button predictive-search__close-modal-button"
+        aria-label="{{ 'accessibility.close_dialog' | t }}"
+        on:click="dialog-component/closeDialog"
+        ref="closeModalButton"
+      >
+        <span class="svg-wrapper">
+            {{ 'icon-close.svg' | inline_asset_content }}
+        </span>
+      </button>
+    </div>
+
+    <div class="payment-modal__sub-header">
+      <p>{{ 'flamma.payment_options_sub_header' | t }}</p>
+    </div>
+
+    <div class="payment-modal__body">
+      {% liquid
+        assign selected_variant = product.selected_or_first_available_variant
+        assign price = selected_variant.price
+        assign compare_at_price = selected_variant.compare_at_price
+
+        assign use_currency = false
+        if settings.currency_code_enabled_product_pages
+          assign use_currency = true
+        endif
+
+        if use_currency
+          assign price_formatted = price | money_with_currency
+          assign compare_at_price_formatted = compare_at_price | money_with_currency
+        else
+          assign price_formatted = price | money
+          assign compare_at_price_formatted = compare_at_price | money
+        endif
+
+        if settings.pix_discount > 0
+          assign pix_multiplier = 100 | minus: settings.pix_discount
+          assign pix_price_raw = price | times: pix_multiplier | divided_by: 100
+          
+          if use_currency
+            assign pix_price_formatted = pix_price_raw | money_with_currency
+          else
+            assign pix_price_formatted = pix_price_raw | money
+          endif
+        else
+          assign pix_price_formatted = price_formatted
+        endif
+      %}
+      <details class="payment-group">
+        <summary class="payment-summary">
+          <div class="payment-summary__header">
+            <span class="svg-wrapper">
+              {% render 'custom-icons' with 'modal-credit-card' as icon %}
+            </span>
+            <span class="payment-title">
+              {{ 'flamma.payment_credit_card' | t }}
+            </span>
+          </div>
+          <span class="payment-arrow">
+             {{ 'icon-caret.svg' | inline_asset_content }}
+          </span>
+        </summary>
+        <div class="payment-details">
+          <div class="installments-header">
+            <span>{{ 'flamma.payment_installments' | t }}</span>
+            <span>{{ 'flamma.payment_total' | t }}</span>
+          </div>
+
+          <div class="installments-list">
+            {%- for i in (1..settings.installments_quantity) -%}
+              {%- liquid
+                # Calcula o valor da parcela (Divisão simples / Sem juros)
+                assign installment_value = price | divided_by: i
+                
+                if use_currency
+                  assign installment_formatted = installment_value | money_with_currency
+                else
+                  assign installment_formatted = installment_value | money
+                endif
+              -%}
+              
+              <div class="installment-row">
+                <span>
+                  <strong>{{ i }}x</strong> 
+                  {{ installment_formatted }}
+                  <span class="installment-note">sem juros</span>
+                </span>
+                <span>{{ price_formatted }}</span>
+              </div>
+            {%- endfor -%}
+          </div>
+        </div>
+      </details>
+
+      {%- if settings.show_pix -%}
+        <details class="payment-group">
+          <summary class="payment-summary">
+            <div class="payment-summary__header">
+              <span class="svg-wrapper">
+                {% render 'custom-icons' with 'modal-pix' as icon %} 
+              </span>
+              <span class="payment-title">
+                {{ 'flamma.payment_pix' | t }}
+                {%- if settings.pix_discount > 0 -%}
+                  <span class="payment-badge">{{ settings.pix_discount }}% OFF</span>
+                {%- endif -%}
+              </span>
+            </div>
+            <span class="payment-arrow">
+               {{ 'icon-caret.svg' | inline_asset_content }}
+            </span>
+          </summary>
+          <div class="payment-details">
+            <p class="payment-price-value">
+              {{ pix_price_formatted }}
+                <span class="payment-compare-price">{{ compare_at_price_formatted }}</span>
+            </p>
+            <ul class="payment-instruction-list">
+              <li>{{ 'flamma.pix_instruction.first' | t }}</li>
+              <li>{{ 'flamma.pix_instruction.second' | t }}</li>
+            </ul>
+          </div>
+        </details>
+      {%- endif -%}
+
+      {%- if settings.show_boleto -%}
+        <details class="payment-group">
+          <summary class="payment-summary">
+            <div class="payment-summary__header">
+              <span class="svg-wrapper">
+                {% render 'custom-icons' with 'modal-boleto' as icon %}
+              </span>
+              <span class="payment-title">
+                {{ 'flamma.payment_boleto' | t }}
+              </span>
+            </div>
+            <span class="payment-arrow">
+               {{ 'icon-caret.svg' | inline_asset_content }}
+            </span>
+          </summary>
+          <div class="payment-details">
+            <p class="payment-price-value">
+              {{ price_formatted }}
+              <span class="payment-compare-price">{{ compare_at_price_formatted }}</span>
+            </p>
+            <ul class="payment-instruction-list">
+              <li>{{ 'flamma.boleto_instruction.first' | t }}</li>
+              <li>{{ 'flamma.boleto_instruction.second' | t }}</li>
+            </ul>
+          </div>
+        </details>
+      {%- endif -%}
+    </div>
+  </dialog>
+</dialog-component>
+
+<script>
+  document.querySelectorAll('.payment-modal__body').forEach(container => {
+    
+    const closeItem = (details) => {
+      const content = details.querySelector('.payment-details');
+      
+      content.style.height = content.scrollHeight + 'px';
+      
+
+      void content.offsetHeight; 
+
+      content.style.height = '0px';
+      content.style.opacity = '0';
+
+      setTimeout(() => {
+        if (content.style.height === '0px') {
+            details.removeAttribute('open');
+            content.style.removeProperty('height');
+            content.style.removeProperty('opacity');
+        }
+      }, 250);
+    };
+
+    const openItem = (details) => {
+      details.setAttribute('open', '');
+      
+      const content = details.querySelector('.payment-details');
+      
+      content.style.height = '0px';
+      content.style.opacity = '0';
+      
+      void content.offsetHeight;
+
+      content.style.height = content.scrollHeight + 'px';
+      content.style.opacity = '1';
+
+      setTimeout(() => {
+         if (details.hasAttribute('open')) {
+             content.style.height = 'auto';
+         }
+      }, 250);
+    };
+
+    container.querySelectorAll('summary').forEach(summary => {
+      summary.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const currentDetails = summary.closest('details');
+        const isOpen = currentDetails.hasAttribute('open') && currentDetails.querySelector('.payment-details').style.height !== '0px';
+
+        container.querySelectorAll('details[open]').forEach(details => {
+          if (details !== currentDetails) {
+            closeItem(details);
+          }
+        });
+
+        if (isOpen) {
+          closeItem(currentDetails);
+        } else {
+          openItem(currentDetails);
+        }
+      });
+    });
+  });
+</script>
+
+{% stylesheet %}
+/* payment modal style */
+  .payment-modal {
+    --payment-border-radius: var(--style-border-radius-popover);
+    --payment-border-width: var(--style-border-width);
+    --modal-width: 50rem; 
+  }
+
+  .payment-modal__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .payment-modal__content {
+    /* Approx set the top so when the content is at max height, the modal is centered */
+    --modal-top-margin: calc(50dvh - var(--modal-max-height) / 2 - 2rem);
+    --modal-width: 33dvw;
+
+    padding: 20px;
+    border: var(--style-border-popover);
+
+    @media screen and (min-width: 750px) {
+      width: var(--modal-width);
+      margin-block-start: var(--modal-top-margin);
+      overflow: hidden;
+    }
+  }
+
+  /* Hide the default dialog backdrop on small screens */
+  @media screen and (max-width: 749px) {
+    .payment-modal__content::backdrop {
+      display: none;
+    }
+  }
+
+  .dialog-modal[open].payment-modal__content {
+    transform-origin: bottom center;
+    animation: search-element-slide-in-bottom 300ms var(--ease-out-quad) forwards;
+    border-radius: var(--payment-border-radius);
+    box-shadow: var(--shadow-popover);
+
+    @media screen and (max-width: 749px) {
+      border-radius: 0;
+    }
+  }
+
+  .dialog-modal.payment-modal__content.dialog-closing {
+    animation: search-element-slide-out-bottom 200ms var(--ease-out-quad) forwards;
+  }
+
+  .payment-modal__content[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .payment-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .payment-modal__sub-header {
+    padding: 0 var(--margin-sm);
+    opacity: 0.75;
+  }
+
+  .payment-modal__title {
+    margin: 0;
+    margin-inline-start: var(--margin-sm);
+    font-weight: var(--font-h4--weight);
+    font-size: var(--font-h4--size);
+    color: var(--color-foreground);
+  }
+
+  .payment-modal__body {
+    padding: 0 var(--margin-sm);
+  }
+
+  .payment-group {
+    border-bottom: 1px solid rgb(var(--color-border-rgb) / 0.1);
+  }
+  
+  .payment-group:last-child {
+    border-bottom: none;
+  }
+
+  .payment-summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-block: var(--padding-md);
+  }
+  
+  .payment-summary::-webkit-details-marker { display: none; }
+
+  .payment-summary__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-foreground);
+  }
+
+  .payment-title {
+    font-size: var(--font-h5--size);
+    line-height: var(--font-h5--line-height);
+    display: flex;
+    align-items: center;
+  }
+
+  .payment-summary__header .svg-wrapper {
+    display: flex;
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-foreground);
+  }
+
+  .payment-arrow {
+    display: flex;
+    transition: transform 0.2s ease;
+  }
+  
+  .payment-arrow svg {
+    width: 1.2rem;
+  }
+
+  details[open] .payment-arrow {
+    transform: rotate(180deg);
+  }
+
+  .payment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 1.5rem;
+    color: rgba(var(--color-foreground-rgb), 0.75);
+    
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    transition: height 0.25s ease-out, opacity 0.25s ease-out;
+    will-change: height, opacity;
+  }
+
+  details[open] .payment-details {
+    opacity: 1;
+  }
+
+  .payment-badge {
+    background-color: var(--color-foreground);
+    font-size: var(--font-size--2xs);
+    color: var(--color-background);
+    padding: 4px 8px;
+    border-radius: 8px;
+    margin-inline-start: var(--margin-sm);
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .payment-price-value {
+    font-weight: var(--font-h5--weight);
+    font-size: var(--font-h5--size);
+    line-height: var(--font-h5--line-height);
+    color: var(--color-foreground);
+    margin-bottom: var(--margin-sm);
+  }
+
+  .payment-compare-price {
+    opacity: .4;
+    text-decoration-line: line-through;
+    text-decoration-thickness: 1.5px;
+  }
+
+  .payment-instruction-list {
+    padding-left: 1.2rem;
+    opacity: .75;
+    margin: 0;
+  }
+
+  .payment-instruction-list li {
+    margin-bottom: var(--margin-sm);
+  }
+  
+  .payment-instruction-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Estilos da Tabela de Parcelas */
+  .installments-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: var(--font-h5--weight);
+    font-size: var(--font-h5--size);
+    color: var(--color-foreground);
+  }
+
+  .installments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    max-height: 25dvh;
+    overflow-y: auto; 
+    padding-right: 0.8rem;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-border-rgb) / 0.1);
+  }
+
+  .installments-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .installments-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .installments-list::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--color-border-rgb) / 0.2);
+    border-radius: 4px;
+  }
+  
+  .installments-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--color-border-rgb) / 0.4);
+  }
+
+  .installment-row {
+    display: flex;
+    justify-content: space-between;
+    opacity: 0.75;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgb(var(--color-border-rgb) / 0.1);
+  }
+  
+  .installment-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .installment-note {
+    font-size: 0.9em;
+    opacity: 0.7;
+    margin-left: 4px;
+    font-weight: 400;
+  }
+
+  @media screen and (max-width: 749px) {
+    .payment-modal .dialog-modal {
+        border-radius: 16px !important;
+        max-width: 90% !important;
+        max-height: 90% !important;
+        height: fit-content !important;
+    }
+  }
+{% endstylesheet %}

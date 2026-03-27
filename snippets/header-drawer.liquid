@@ -102,6 +102,12 @@
             {% assign first_accordion_open = false %}
             {% assign animation_index = 0 %}
             {%- for link in linklist.links -%}
+              {% liquid
+                assign menu_title = link.title
+                if menu_title contains '[' and menu_title contains ']'
+                  assign menu_title = menu_title | split: ']' | last | strip
+                endif
+              %}
               {% assign animation_index = animation_index | plus: 1 %}
               <li
                 style="--menu-drawer-animation-index: {{ animation_index }};"
@@ -126,7 +132,7 @@
                         id="HeaderDrawer-{{ link.handle }}"
                         class="menu-drawer__menu-item menu-drawer__menu-item--mainlist menu-drawer__animated-element focus-inset"
                       >
-                        <span class="menu-drawer__menu-item-text wrap-text">{{ link.title | escape }}</span>
+                        <span class="menu-drawer__menu-item-text wrap-text">{{ menu_title | escape }}</span>
                         <span class="svg-wrapper icon-plus">
                           {{- 'icon-plus.svg' | inline_asset_content -}}
                         </span>
@@ -186,7 +192,7 @@
                       aria-current="page"
                     {% endif %}
                   >
-                    <span class="menu-drawer__menu-item-text wrap-text">{{ link.title | escape }}</span>
+                    <span class="menu-drawer__menu-item-text wrap-text">{{ menu_title | escape }}</span>
                   </a>
                   {% liquid
                     assign render_link_image = false
@@ -240,7 +246,7 @@
                       aria-current="page"
                     {% endif %}
                   >
-                    <span class="menu-drawer__menu-item-text wrap-text">{{ link.title | escape }}</span>
+                    <span class="menu-drawer__menu-item-text wrap-text">{{ menu_title | escape }}</span>
                   </a>
                 {% endif %}
               </li>
@@ -251,6 +257,12 @@
             {%- endcomment -%}
             {% assign animation_index = 0 %}
             {%- for link in linklist.links -%}
+              {% liquid
+                assign menu_title = link.title
+                if menu_title contains '[' and menu_title contains ']'
+                  assign menu_title = menu_title | split: ']' | last | strip
+                endif
+              %}
               {% assign animation_index = animation_index | plus: 1 %}
               <li
                 class="menu-drawer__list-item"
@@ -269,7 +281,7 @@
                       class="menu-drawer__menu-item menu-drawer__menu-item--mainlist menu-drawer__animated-element focus-inset{% if link.child_active %} menu-drawer__menu-item--active{% endif %}"
                       on:click="header-drawer/open/submenu"
                     >
-                      <span class="menu-drawer__menu-item-text wrap-text">{{ link.title | escape }}</span>
+                      <span class="menu-drawer__menu-item-text wrap-text">{{ menu_title | escape }}</span>
                       <span class="svg-wrapper icon-caret icon-caret--forward">
                         {{- 'icon-caret.svg' | inline_asset_content -}}
                       </span>
@@ -291,7 +303,7 @@
                             <span class="svg-wrapper icon-caret icon-caret--backward">
                               {{- 'icon-caret.svg' | inline_asset_content -}}
                             </span>
-                            <span class="menu-drawer__menu-item-text wrap-text">{{ link.title | escape }}</span>
+                            <span class="menu-drawer__menu-item-text wrap-text">{{ menu_title | escape }}</span>
                           </button>
                           <button
                             class="button button-unstyled close-button menu-drawer__close-button"
@@ -557,7 +569,7 @@
                       aria-current="page"
                     {% endif %}
                   >
-                    <span class="menu-drawer__menu-item-text wrap-text">{{ link.title | escape }}</span>
+                    <span class="menu-drawer__menu-item-text wrap-text">{{ menu_title | escape }}</span>
                   </a>
                 {%- endif -%}
               </li>
@@ -569,6 +581,45 @@
         class="menu-drawer__utility-links menu-drawer__animated-element"
         style="--menu-drawer-animation-index: {{ linklist.links.size }};"
       >
+        {%- # FLAMMA WISHLIST START -%}
+        {%- if section.settings.search_design == 'search_icon' and settings.show_wishlist -%}
+          <div class="drawer-localization__button h3 link focus-inset" style="display: flex;">
+            <a
+              href="{{ settings.wishlist_page.url | default: '/pages/wishlist' }}"
+              class="menu-drawer__account link focus-inset h5"
+              style="display: flex; align-items: center; gap: 1rem; width: 100%;"
+            >
+              {%- # Wrap the icon so the bubble anchors to the heart, not the text -%}
+              <div style="position: relative; display: flex; align-items: center;">
+                {%- if settings.wishlist_icon_style == 'bubble' -%}
+                  <span class="svg-wrapper" aria-hidden="true">
+                    {{ 'icon-heart.svg' | inline_asset_content }}
+                  </span>
+                  {%- # Adjusted the bubble coordinates slightly for the drawer layout -%}
+                  <wishlist-bubble
+                    class="wishlist-count-bubble is-hidden"
+                    style="--wishlist-bubble-top: -6px; --wishlist-bubble-right: -8px;"
+                    >0</wishlist-bubble
+                  >
+
+                {%- else -%}
+                  <wishlist-header-icon style="display: contents;">
+                    <span class="svg-wrapper wishlist-icon--empty wie-header" aria-hidden="true">
+                      {{ 'icon-heart.svg' | inline_asset_content }}
+                    </span>
+                    <span class="svg-wrapper wishlist-icon--filled" aria-hidden="true" style="display: none;">
+                      {{ 'icon-heart-fill.svg' | inline_asset_content }}
+                    </span>
+                  </wishlist-header-icon>
+                {%- endif -%}
+              </div>
+
+              <span>{{ 'flamma.wishlist' | t | default: 'Wishlist' }}</span>
+            </a>
+          </div>
+        {%- endif -%}
+        {%- # FLAMMA WISHLIST END -%}
+
         {% liquid
           assign show_language = section.settings.show_language
           if localization.available_languages.size <= 1

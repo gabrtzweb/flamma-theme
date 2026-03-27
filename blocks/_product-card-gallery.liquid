@@ -24,6 +24,7 @@
         </div>
       {%- endif -%}
     </div>
+    {% render 'product-card-badges', product: closest.product, settings: settings %}
     {%- if settings.show_wishlist -%}
       {% render 'wishlist-button', product_id: product.id %}
     {%- endif -%}

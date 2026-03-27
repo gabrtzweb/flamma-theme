@@ -1,5 +1,3 @@
-
-
 <script
   src="{{ 'marquee.js' | asset_url }}"
   type="module"
@@ -10,7 +8,7 @@
 
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <marquee-component
-  class="section spacing-style gap-style color-{{ section.settings.color_scheme }}"
+  class="section spacing-style gap-style color-{{ section.settings.color_scheme }}{% if section.settings.enable_page_width %} page-width{% endif %}"
   style="
     {%- render 'spacing-style', settings: section.settings %};
     {% render 'gap-style', value: gap_between_elements, name: 'marquee-gap' %}
@@ -132,6 +130,12 @@
       "id": "color_scheme",
       "label": "t:settings.color_scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_page_width",
+      "label": "t:settings.page_width",
+      "default": false
     },
     {
       "type": "header",

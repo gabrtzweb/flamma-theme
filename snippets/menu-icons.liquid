@@ -1,0 +1,44 @@
+{%- comment -%}
+  Renders icon based on the link title or the custom menu tag by querying Metaobjects.
+{%- endcomment -%}
+
+{% liquid
+  # 1. Determine the handle we are looking for (either the [tag] or the handleized title)
+  if icon_tag != blank
+    assign lookup_handle = icon_tag
+  else
+    assign lookup_handle = title | handleize
+  endif
+
+  # 2. Query the Metaobject database for that exact handle
+  assign custom_icon = shop.metaobjects.menu_icons[lookup_handle].svg_code
+%}
+
+{%- # 3. Render the SVG if it exists in the database -%}
+{%- if custom_icon != blank -%}
+  <span class="menu-item-icon">
+    {{ custom_icon }}
+  </span>
+{%- endif -%}
+
+{% stylesheet %}
+  .header__row--bottom .overflow-menu::part(list) {
+    gap: 32px !important;
+  }
+  .menu-list__link:has(.menu-item-icon) {
+    display: inline-flex !important;
+    align-items: center;
+    flex-direction: row;
+    gap: 0 !important;
+  }
+  .menu-item-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .menu-item-icon svg {
+    display: block;
+    width: calc(1em + 2px);
+    height: calc(1em + 2px);
+    fill: currentColor;
+  }
+{% endstylesheet %}

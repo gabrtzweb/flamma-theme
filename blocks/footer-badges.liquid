@@ -1,0 +1,282 @@
+
+
+{% liquid
+  assign block_settings = block.settings
+%}
+
+<div
+  class="footer-badges footer-badges--{{ block.id }} spacing-style"
+  style="{% render 'spacing-padding', settings: block_settings %}"
+  {{ block.shopify_attributes }}
+>
+  <ul class="footer-badges__list" role="list">
+    {% for i in (1..3) %}
+      {% liquid
+        assign link_url = blank
+        assign icon_key = blank
+        assign badge_name = blank
+        assign domain = block.settings.website_domain
+
+        case i
+          when 1
+            assign icon_key = 'badge-google-safe'
+            assign badge_name = 'Google Safe Browsing'
+            if domain != blank
+              assign link_url = 'https://transparencyreport.google.com/safe-browsing/search?url=' | append: domain
+            endif
+          when 2
+            assign icon_key = 'badge-reclame-aqui'
+            assign badge_name = 'Reclame Aqui'
+            if domain != blank
+              assign link_url = 'https://www.reclameaqui.com.br/detector-site-confiavel/' | append: domain
+            endif
+          when 3
+            assign icon_key = 'badge-ssl-shopper'
+            assign badge_name = 'SSL Shopper'
+            if domain != blank
+              assign link_url = 'https://www.sslshopper.com/ssl-checker.html#hostname=' | append: domain
+            endif
+        endcase
+      %}
+
+      {%- if icon_key != blank -%}
+        <li class="footer-badges__item">
+          {%- if link_url != blank -%}
+            <a href="{{ link_url }}" class="footer-badges__link" target="_blank" rel="noopener noreferrer" aria-label="Verificar em {{ badge_name }}">
+          {%- endif -%}
+
+          <div class="footer-badges__svg-wrapper">
+            {% render 'custom-icons' with icon_key as icon %}
+          </div>
+
+          {%- if link_url != blank -%}
+            </a>
+          {%- endif -%}
+        </li>
+      {%- endif -%}
+    {% endfor %}
+  </ul>
+</div>
+
+{% style %}
+  .footer-badges--{{ block.id }} {
+    --icon-size-desktop: {{ block_settings.badge_size_desktop }}px;
+    --icon-size-mobile: {{ block_settings.badge_size_mobile }}px;
+    --gap-desktop: {{ block_settings.spacing_desktop }}px;
+    --gap-mobile: {{ block_settings.spacing_mobile }}px;
+    --layout-width: {{ block.settings.width }};
+    --alignment-desktop: {{ block_settings.alignment_desktop }};
+    --alignment-mobile: {{ block_settings.alignment_mobile }};
+  }
+
+  .footer-badges {
+    width: var(--layout-width);
+    max-width: 100%;
+  }
+
+  .footer-badges__list {
+    display: flex;
+    justify-content: var(--alignment-desktop);
+    gap: var(--gap-desktop);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+  
+  .footer-badges__item {
+    display: flex;
+    align-items: center;
+  }
+
+  .footer-badges__svg-wrapper {
+    opacity: 0.75;
+    width: var(--icon-size-desktop);
+    height: auto;
+    color: var(--color, var(--color-foreground));
+    transition: color var(--animation-speed) var(--animation-easing);
+    display: flex;
+  }
+
+  .footer-badges__link:hover .footer-badges__svg-wrapper {
+    color: var(--color-primary-hover);
+  }
+
+  .footer-badges__svg-wrapper svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+  }
+
+  @media screen and (max-width: 749px) {
+    .footer-badges {
+      width: 100%; 
+    }
+
+    .footer-badges__list {
+      flex-direction: row;
+      justify-content: var(--alignment-mobile);
+      gap: var(--gap-mobile);
+    }
+
+    .footer-badges__svg-wrapper {
+      width: var(--icon-size-mobile);
+    }
+  }
+{% endstyle %}
+
+{% schema %}
+{
+  "name": "t:flamma.footer_badges",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "website_domain",
+      "label": "t:flamma.website_domain",
+      "info": "t:flamma.website_domain_info",
+      "default": "google.com"
+    },
+    {
+      "type": "header",
+      "content": "t:content.layout"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:settings.width",
+      "options": [
+        {
+          "value": "fit-content",
+          "label": "t:options.fit"
+        },
+        {
+          "value": "100%",
+          "label": "t:options.fill"
+        }
+      ],
+      "default": "fit-content"
+    },
+    {
+      "type": "select",
+      "id": "alignment_desktop",
+      "label": "t:settings.alignment",
+      "options": [
+        { "value": "flex-start", "label": "t:options.left" },
+        { "value": "center", "label": "t:options.center" },
+        { "value": "flex-end", "label": "t:options.right" },
+        { "value": "space-between", "label": "t:options.space_between" },
+      ],
+      "default": "flex-end",
+      "visible_if": "{{ block.settings.width == '100%' }}"
+    },
+    {
+      "type": "range",
+      "id": "badge_size_desktop",
+      "label": "t:flamma.badge_width",
+      "min": 64,
+      "max": 128,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "spacing_desktop",
+      "label": "t:names.spacing",
+      "min": 8,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "t:content.mobile_layout"
+    },
+    {
+      "type": "select",
+      "id": "alignment_mobile",
+      "label": "t:settings.alignment",
+      "options": [
+        { "value": "flex-start", "label": "t:options.left" },
+        { "value": "center", "label": "t:options.center" },
+        { "value": "flex-end", "label": "t:options.right" },
+        { "value": "space-between", "label": "t:options.space_between" },
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "badge_size_mobile",
+      "label": "t:flamma.badge_width",
+      "min": 64,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "spacing_mobile",
+      "label": "t:names.spacing",
+      "min": 4,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:flamma.footer_badges",
+      "category": "t:categories.footer"
+    }
+  ]
+}
+{% endschema %}

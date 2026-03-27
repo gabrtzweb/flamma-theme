@@ -1,7 +1,7 @@
-
 {% assign block_settings = block.settings %}
 <div
   class="
+    flamma-copyright
     footer-utilities__group-copyright
     custom-typography
     {% if block_settings.font_size != "" %}custom-font-size{% endif %}
@@ -16,6 +16,15 @@
       , {{ powered_by_link }}
     {%- endif -%}
   </span>
+
+  {%- if block_settings.show_developed_by -%}
+    <div class="flamma-copyright__logo">
+      <span class="footer-utilities__text"> , {{ 'flamma.developed_by' | t }} </span>
+      <a href="https://flamma.digital/" target="_blank" rel="noopener noreferrer">
+        {% render 'custom-icons' with 'flamma-logo' as icon %}
+      </a>
+    </div>
+  {%- endif -%}
 </div>
 
 {% schema %}
@@ -27,6 +36,12 @@
       "type": "checkbox",
       "id": "show_powered_by",
       "label": "t:settings.show_powered_by_shopify",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_developed_by",
+      "label": "t:flamma.show_developed_by",
       "default": true
     },
     {

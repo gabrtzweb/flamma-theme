@@ -1,4 +1,3 @@
-
 {% assign block_settings = block.settings %}
 
 {%- assign block_settings = block.settings -%}
@@ -22,9 +21,38 @@
   >
     {%- for type in shop.enabled_payment_types -%}
       <li class="payment-icons__item">
+        {%- if block_settings.payment_link != blank -%}
+          <a href="{{ block_settings.payment_link }}">
+        {%- endif -%}
         {{ type | payment_type_svg_tag: class: 'icon icon--full-color' }}
+        {%- if block_settings.payment_link != blank -%}
+          </a>
+        {%- endif -%}
       </li>
     {%- endfor -%}
+    {%- if block_settings.show_pix_icon -%}
+      <li class="payment-icons__item">
+        {%- if block_settings.payment_link != blank -%}
+          <a href="{{ block_settings.payment_link }}">
+        {%- endif -%}
+        {% render 'custom-icons' with 'payment-pix' as icon %}
+        {%- if block_settings.payment_link != blank -%}
+          </a>
+        {%- endif -%}
+      </li>
+    {%- endif -%}
+
+    {%- if block_settings.show_boleto_icon -%}
+      <li class="payment-icons__item">
+        {%- if block_settings.payment_link != blank -%}
+          <a href="{{ block_settings.payment_link }}">
+        {%- endif -%}
+        {% render 'custom-icons' with 'payment-boleto' as icon %}
+        {%- if block_settings.payment_link != blank -%}
+          </a>
+        {%- endif -%}
+      </li>
+    {%- endif -%}
   </ul>
 </div>
 
@@ -87,6 +115,31 @@
       "step": 1,
       "unit": "px",
       "default": 10
+    },
+    {
+      "type": "header",
+      "content": "t:content.icon"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pix_icon",
+      "label": "t:flamma.show_pix_icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_boleto_icon",
+      "label": "t:flamma.show_boleto_icon",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:content.link"
+    },
+    {
+      "type": "url",
+      "id": "payment_link",
+      "label": "t:settings.link"
     },
     {
       "type": "header",

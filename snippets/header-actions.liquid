@@ -13,6 +13,7 @@
       {{ 'content.cart_title' | t }}
     </span>
 
+    <div class="header-actions__icon-wrapper">
     <span
       class="svg-wrapper {% if display_style != 'icon' %}desktop:hidden{% endif %}"
       aria-hidden="true"
@@ -21,6 +22,15 @@
     </span>
 
     {% render 'cart-bubble', limit: 100, live_region: true %}
+    </div>
+
+    {%- if section.settings.show_cart_label -%}
+      <div class="header-actions__icon-label">
+        <span class="header-label">
+          {{ 'content.cart_title' | t }}
+        </span>
+      </div>
+    {%- endif -%}
   </cart-icon>
 {% endcapture %}
 
@@ -98,6 +108,54 @@
       </shopify-account>
     </div>
   {% endif %}
+
+  {%- # FLAMMA WISHLIST START -%}
+  {%- if settings.show_wishlist -%}
+    <script
+      src="{{ 'wishlist.js' | asset_url }}"
+      type="module"
+      fetchpriority="low"
+    ></script>
+
+    <a
+      href="{{ settings.wishlist_page.url | default: '/pages/wishlist' }}"
+      class="header-actions__action action__wishlist {% if display_style == 'text' %} header-actions__text-style{% endif %}"
+      aria-label="Wishlist"
+      style="position: relative; display: flex; align-items: center;"
+    >
+      <span class="{% if display_style == 'icon' %}hidden{% else %}mobile:hidden{% endif %}">
+        {{ 'flamma.wishlist' | t }}
+      </span>
+
+      {%- if settings.wishlist_icon_style == 'bubble' -%}
+        <span
+          class="svg-wrapper {% if display_style != 'icon' %}desktop:hidden{% endif %}"
+          aria-hidden="true"
+        >
+          {{ 'icon-heart.svg' | inline_asset_content }}
+        </span>
+        <wishlist-bubble class="wishlist-count-bubble is-hidden">0</wishlist-bubble>
+
+      {%- else -%}
+        <wishlist-header-icon style="display: contents;">
+          <span
+            class="svg-wrapper wishlist-icon--empty wie-header {% if display_style != 'icon' %}desktop:hidden{% endif %}"
+            aria-hidden="true"
+          >
+            {{ 'icon-heart.svg' | inline_asset_content }}
+          </span>
+          <span
+            class="svg-wrapper wishlist-icon--filled {% if display_style != 'icon' %}desktop:hidden{% endif %}"
+            aria-hidden="true"
+            style="display: none;"
+          >
+            {{ 'icon-heart-fill.svg' | inline_asset_content }}
+          </span>
+        </wishlist-header-icon>
+      {%- endif -%}
+    </a>
+  {% endif %}
+  {%- # FLAMMA WISHLIST END -%}
 
   {% if settings.cart_type == 'drawer' and template.name != 'cart' %}
     <script

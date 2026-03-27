@@ -10,6 +10,9 @@
 {%- liquid
   assign show_unit_price = show_unit_price | default: false
   assign show_sale_price_first = show_sale_price_first | default: false
+  assign custom_installments = custom_installments | default: false
+  assign custom_installment_count = custom_installment_count | default: 12
+  assign custom_installment_interest = custom_installment_interest | default: 'without_interest'
   assign selected_variant = product_resource.selected_or_first_available_variant
   assign price = selected_variant.price
   assign compare_at_price = selected_variant.compare_at_price
@@ -123,4 +126,40 @@
 </div>
 {%- if has_volume_pricing -%}
   <small ref="volumePricingNote" class="volume-pricing-note">{{ 'content.volume_pricing_available' | t }}</small>
+{%- endif -%}
+
+{%- if custom_installments -%}
+  {%- liquid
+    assign base_price = selected_variant.price
+    if product_resource == blank
+      assign base_price = 1999
+    endif
+
+    # Divide the raw price integer by the selected number of installments
+    assign installment_raw = base_price | divided_by: custom_installment_count
+
+    # Format it back into a money string (R$)
+    if use_currency
+      assign installment_formatted = installment_raw | money_with_currency
+    else
+      assign installment_formatted = installment_raw | money
+    endif
+
+    # Convert the select dropdown values to customer-facing text
+    assign interest_text = ''
+    if custom_installment_interest == 'without_interest'
+      assign interest_text = 'flamma.without_interest' | t
+    elsif custom_installment_interest == 'with_interest'
+      assign interest_text = 'flamma.with_interest' | t
+    endif
+  -%}
+
+  <div class="custom-installments">
+    {{ 'flamma.or' | t }}
+    <strong>{{ custom_installment_count }}x</strong> {{ 'flamma.of' | t }}
+    <strong>{{ installment_formatted }}</strong>
+    {% if interest_text != blank %}
+      {{ interest_text }}
+    {% endif %}
+  </div>
 {%- endif -%}

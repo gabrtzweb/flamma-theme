@@ -1525,6 +1525,89 @@
       }
     ]
   },
+  // FLAMMA DIGITAL //
+  {
+    "name": "t:flamma.tag_badges",
+    "settings": [
+      {
+        "type": "header",
+        "content": "t:flamma.first_tag_badge_header"
+      },
+      {
+        "type": "text",
+        "id": "custom_badge_1_tag",
+        "label": "t:flamma.custom_badge_tag"
+      },
+      {
+        "type": "text",
+        "id": "custom_badge_1_text",
+        "label": "t:flamma.custom_badge_text"
+      },
+      {
+        "type": "header",
+        "content": "t:flamma.second_tag_badge_header"
+      },
+      {
+        "type": "text",
+        "id": "custom_badge_2_tag",
+        "label": "t:flamma.custom_badge_tag"
+      },
+      {
+        "type": "text",
+        "id": "custom_badge_2_text",
+        "label": "t:flamma.custom_badge_text"
+      },
+      {
+        "type": "header",
+        "content": "t:settings.colors"
+      },
+      {
+        "type": "color_scheme",
+        "id": "first_tag_badge_color",
+        "label": "t:flamma.first_color",
+        "default": "scheme-accent-1"
+      },
+      {
+        "type": "color_scheme",
+        "id": "second_tag_badge_color",
+        "label": "t:flamma.second_color",
+        "default": "scheme-accent-2"
+      }
+    ]
+  },
+  {
+    "name": "t:flamma.wishlist",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "show_wishlist",
+        "label": "t:flamma.show_wishlist",
+        "default": true
+      },
+      {
+        "type": "page",
+        "id": "wishlist_page",
+        "label": "t:flamma.wishlist_page"
+      },
+      {
+        "type": "select",
+        "id": "wishlist_icon_style",
+        "label": "t:flamma.wishlist_style",
+        "options": [
+          {
+            "value": "bubble",
+            "label": "t:flamma.bubble_counter"
+          },
+          {
+            "value": "filled",
+            "label": "t:flamma.filled_icon"
+          }
+        ],
+        "default": "bubble"
+      }
+    ]
+  },
+  // FLAMMA DIGITAL END //
   {
     "name": "t:names.buttons",
     "settings": [

@@ -1,5 +1,3 @@
-
-
 {% if section.blocks.size > 1 %}
   <script
     src="{{ 'announcement-bar.js' | asset_url }}"
@@ -20,22 +18,129 @@
       assign autoplay = true
       assign show_arrows = true
     endif
+
+    # 1. Evaluate Features
+    assign show_support_active = section.settings.show_support
+    assign support_pos = section.settings.support_position
+
+    assign show_language = section.settings.show_language
+    if localization.available_languages.size <= 1
+      assign show_language = false
+    endif
+
+    assign show_country = section.settings.show_country
+    if localization.available_countries.size <= 1
+      assign show_country = false
+    endif
+
+    assign show_localization_active = false
+    if show_language or show_country
+      assign show_localization_active = true
+    endif
+    assign loc_pos = section.settings.localization_position
+
+    # 2. Determine Which Columns Have Content
+    assign has_left_content = false
+    if show_support_active and support_pos == 'left'
+      assign has_left_content = true
+    endif
+    if show_localization_active and loc_pos == 'left'
+      assign has_left_content = true
+    endif
+
+    assign has_right_content = false
+    if show_support_active and support_pos == 'right'
+      assign has_right_content = true
+    endif
+    if show_localization_active and loc_pos == 'right'
+      assign has_right_content = true
+    endif
+
+    # 3. Assign the Final Grid Layout
+    assign layout_style = '1-col'
+    if has_left_content and has_right_content
+      assign layout_style = '3-col'
+    elsif has_left_content
+      assign layout_style = '2-col-left'
+    elsif has_right_content
+      assign layout_style = '2-col-right'
+    endif
   %}
 
-  <announcement-bar-component
-    class="announcement-bar__slider"
-    {% if autoplay == true %}
-      autoplay="{{ section.settings.speed }}" aria-live="polite"
-    {% endif %}
-  >
-    {% if show_arrows %}
-      {% render 'slideshow-arrows', icon_style: 'chevron' %}
+  <div class="announcement-bar__grid" data-layout="{{ layout_style }}">
+    {%- # LEFT COLUMN -%}
+    {% if has_left_content %}
+      <div class="announcement-bar__left" style="display: flex; gap: 1.5rem; align-items: center;">
+        {% if show_support_active and support_pos == 'left' %}
+          {% render 'announcement-actions',
+            action_type: 'support',
+            support_url: section.settings.support_url,
+            localization_font: section.settings.localization_font,
+            localization_font_size: section.settings.localization_font_size
+          %}
+        {% endif %}
+        {% if show_localization_active and loc_pos == 'left' %}
+          {% render 'announcement-actions',
+            action_type: 'localization',
+            show_country: show_country,
+            show_language: show_language,
+            country_selector_style: section.settings.country_selector_style,
+            localization_font: section.settings.localization_font,
+            localization_font_size: section.settings.localization_font_size,
+            color_scheme: section.settings.color_scheme,
+            section_id: section.id
+          %}
+        {% endif %}
+      </div>
     {% endif %}
 
-    <div class="announcement-bar__slides">
-      {% content_for 'blocks' %}
+    {%- # CENTER COLUMN -%}
+    <div class="announcement-bar__center">
+      <announcement-bar-component
+        class="announcement-bar__slider"
+        {% if autoplay == true %}
+          autoplay="{{ section.settings.speed }}" aria-live="polite"
+        {% endif %}
+      >
+        {% if show_arrows %}
+          {% render 'slideshow-arrows', icon_style: 'chevron' %}
+        {% endif %}
+
+        <div class="announcement-bar__slides">
+          {% content_for 'blocks' %}
+        </div>
+      </announcement-bar-component>
     </div>
-  </announcement-bar-component>
+
+    {%- # RIGHT COLUMN -%}
+    {% if has_right_content %}
+      <div
+        class="announcement-bar__right"
+        style="display: flex; gap: 1.5rem; align-items: center; justify-content: flex-end;"
+      >
+        {% if show_support_active and support_pos == 'right' %}
+          {% render 'announcement-actions',
+            action_type: 'support',
+            support_url: section.settings.support_url,
+            localization_font: section.settings.localization_font,
+            localization_font_size: section.settings.localization_font_size
+          %}
+        {% endif %}
+        {% if show_localization_active and loc_pos == 'right' %}
+          {% render 'announcement-actions',
+            action_type: 'localization',
+            show_country: show_country,
+            show_language: show_language,
+            country_selector_style: section.settings.country_selector_style,
+            localization_font: section.settings.localization_font,
+            localization_font_size: section.settings.localization_font_size,
+            color_scheme: section.settings.color_scheme,
+            section_id: section.id
+          %}
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
 </aside>
 
 {% stylesheet %}
@@ -143,6 +248,134 @@
       "max": 10,
       "default": 5,
       "unit": "sec"
+    },
+    {
+      "type": "header",
+      "content": "t:flamma.announcement_actions"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_support",
+      "label": "t:flamma.show_support",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "support_url",
+      "label": "t:settings.link",
+      "visible_if": "{{ section.settings.show_support }}"
+    },
+    {
+      "type": "select",
+      "id": "support_position",
+      "label": "t:settings.position",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:options.left"
+        },
+        {
+          "value": "right",
+          "label": "t:options.right"
+        }
+      ],
+      "default": "left",
+      "visible_if": "{{ section.settings.show_support }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.localization"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country",
+      "label": "t:settings.country_region",
+      "info": "t:info.manage_countries_regions",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "country_selector_style",
+      "label": "t:settings.flag",
+      "default": true,
+      "visible_if": "{{ section.settings.show_country }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_language",
+      "label": "t:settings.language_selector",
+      "info": "t:info.manage_languages",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "localization_font",
+      "label": "t:settings.font",
+      "options": [
+        {
+          "value": "heading",
+          "label": "t:options.heading"
+        },
+        {
+          "value": "subheading",
+          "label": "t:options.subheading"
+        },
+        {
+          "value": "body",
+          "label": "t:options.body"
+        },
+        {
+          "value": "accent",
+          "label": "t:options.accent"
+        }
+      ],
+      "default": "heading",
+      "visible_if": "{{ section.settings.show_country or section.settings.show_language }}"
+    },
+    {
+      "type": "select",
+      "id": "localization_font_size",
+      "label": "t:settings.size",
+      "options": [
+        {
+          "value": "0.625rem",
+          "label": "10px"
+        },
+        {
+          "value": "0.75rem",
+          "label": "12px"
+        },
+        {
+          "value": "0.875rem",
+          "label": "14px"
+        },
+        {
+          "value": "1rem",
+          "label": "16px"
+        },
+        {
+          "value": "1.125rem",
+          "label": "18px"
+        }
+      ],
+      "default": "1rem"
+    },
+    {
+      "type": "select",
+      "id": "localization_position",
+      "label": "t:settings.position",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:options.left"
+        },
+        {
+          "value": "right",
+          "label": "t:options.right"
+        }
+      ],
+      "default": "right",
+      "visible_if": "{{ section.settings.show_country or section.settings.show_language }}"
     },
     {
       "type": "header",

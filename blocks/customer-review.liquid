@@ -1,0 +1,334 @@
+
+
+{% liquid
+  assign block_settings = block.settings
+  assign star_color_class = 'review-line__rating--' | append: block_settings.star_color
+%}
+
+<div
+  class="review-line-container spacing-style"
+  style="{% render 'spacing-style', settings: block_settings %}"
+  {{ block.shopify_attributes }}
+>
+  <div
+    class="review-line__wrapper {{ block_settings.type_preset }} color-{{ block_settings.color_scheme }} {{ star_color_class }}"
+    style="
+      --padding-vertical: {{ block_settings.padding_vertical }}px;
+      --padding-horizontal: {{ block_settings.padding_horizontal }}px;
+      --border-radius: {{ block_settings.border_radius }}px;
+      --gap: {{ block_settings.gap }}px;
+    "
+  >
+    <div class="review-line__avatars">
+      {% for i in (1..4) %}
+        {% liquid
+          assign avatar_key = 'avatar_' | append: i
+          assign avatar_image = block_settings[avatar_key]
+        %}
+        <div
+          class="review-line__avatar"
+          style="
+            --avatar-size: {{ block_settings.avatar_size }}px;
+            --avatar-border-width: {{ block_settings.avatar_border_width }}px;
+            --avatar-overlap: {{ block_settings.avatar_overlap }}px;
+          "
+        >
+          {% if avatar_image != blank %}
+            <img
+              src="{{ avatar_image | image_url: width: block_settings.avatar_size, height: block_settings.avatar_size, crop: 'center' }}"
+              alt="Avatar"
+              width="{{ block_settings.avatar_size }}"
+              height="{{ block_settings.avatar_size }}"
+              loading="lazy"
+            >
+          {% else %}
+            <div class="review-line__avatar-placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div
+      class="review-line__rating"
+      style="--star-size: calc(var(--font-{{ block_settings.type_preset }}--size) * 1.1);"
+    >
+      {% for i in (1..5) %}
+        <svg class="review-line__star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </svg>
+      {% endfor %}
+    </div>
+
+    <div class="review-line__text">
+      {{ block.settings.review_text }}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .review-line__wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--gap);
+    padding: var(--padding-vertical) var(--padding-horizontal);
+    border-radius: var(--border-radius);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .review-line__avatars {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .review-line__avatar {
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    border-radius: 50%;
+    border: var(--avatar-border-width) solid var(--color-background); /* Usa o fundo para o efeito de "corte" */
+    overflow: hidden;
+    position: relative;
+    background-color: var(--color-background-secondary);
+  }
+  .review-line__avatar:not(:first-child) {
+    margin-left: calc(var(--avatar-overlap) * -1);
+  }
+  .review-line__avatar img,
+  .review-line__avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .review-line__avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-foreground-secondary);
+  }
+  .review-line__avatar-placeholder svg {
+    width: 60%;
+    height: 60%;
+  }
+  .review-line__rating {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .review-line__star {
+    width: var(--star-size);
+    height: var(--star-size);
+    color: var(--star-fill-color);
+  }
+  .review-line__rating--foreground {
+    --star-fill-color: var(--color-foreground);
+  }
+  .review-line__rating--primary {
+    --star-fill-color: var(--color-primary);
+  }
+  .review-line__text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:flamma.customer_review_line",
+  "tag": null,
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "avatar_1",
+      "label": "t:flamma.avatar_1"
+    },
+    {
+      "type": "image_picker",
+      "id": "avatar_2",
+      "label": "t:flamma.avatar_2"
+    },
+    {
+      "type": "image_picker",
+      "id": "avatar_3",
+      "label": "t:flamma.avatar_3"
+    },
+    {
+      "type": "image_picker",
+      "id": "avatar_4",
+      "label": "t:flamma.avatar_4"
+    },
+    {
+      "type": "text",
+      "id": "review_text",
+      "label": "t:flamma.review_text",
+      "default": "Loved by 10,000+ happy customers"
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme"
+    },
+    {
+      "type": "select",
+      "id": "star_color",
+      "label": "t:flamma.star_color",
+      "options": [
+        { "value": "foreground", "label": "t:options.text" },
+        { "value": "primary", "label": "t:options.body" }
+      ],
+      "default": "primary"
+    },
+    {
+      "type": "header",
+      "content": "t:content.layout"
+    },
+    {
+      "type": "range",
+      "id": "avatar_size",
+      "min": 20,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "label": "t:flamma.avatar_size",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "avatar_overlap",
+      "min": 5,
+      "max": 30,
+      "step": 1,
+      "unit": "px",
+      "label": "t:flamma.avatar_overlap",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "avatar_border_width",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.border_width",
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "min": 8,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "t:settings.gap",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding_vertical",
+      "min": 4,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "t:settings.vertical_padding",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding_horizontal",
+      "min": 4,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "t:settings.padding_horizontal",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "t:settings.border_radius",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "t:content.typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        { "value": "paragraph", "label": "t:options.paragraph" },
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" }
+      ],
+      "default": "paragraph"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:flamma.customer_review_line",
+      "category": "t:categories.decorative"
+    }
+  ]
+}
+{% endschema %}

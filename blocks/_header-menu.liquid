@@ -1,4 +1,3 @@
-
 {%- doc -%}
   Renders a header menu block.
 
@@ -34,6 +33,12 @@
             role="list"
           >
             {% for link in block_settings.menu.links %}
+              {% liquid
+                assign menu_title = link.title
+                if menu_title contains '[' and menu_title contains ']'
+                  assign menu_title = menu_title | split: ']' | last | strip
+                endif
+              %}
               <li>
                 <a
                   href="{{ link.url }}"
@@ -43,7 +48,7 @@
                     aria-current="page"
                   {% endif %}
                 >
-                  {{- link.title -}}
+                  {{- menu_title -}}
                 </a>
               </li>
             {% endfor %}
@@ -79,6 +84,15 @@
 
     {% capture children %}
       {% for link in block_settings.menu.links %}
+        {% liquid
+          assign menu_title = link.title
+          assign icon_tag = blank
+          
+          if menu_title contains '[' and menu_title contains ']'
+            assign icon_tag = menu_title | split: ']' | first | remove: '[' | strip | downcase
+            assign menu_title = menu_title | split: ']' | last | strip
+          endif
+        %}
         <li
           role="presentation"
           class="menu-list__list-item"
@@ -101,7 +115,10 @@
             {% endif %}
             ref="menuitem"
           >
-            <span class="menu-list__link-title">{{- link.title -}}</span>
+            {%- if block_settings.show_menu_icons -%}
+              {% render 'menu-icons', title: link.title, icon_tag: icon_tag %}
+            {%- endif -%}
+            <span class="menu-list__link-title">{{- menu_title -}}</span>
           </a>
           {%- if link.links != blank -%}
             <div class="menu-list__submenu{{ color_scheme_classes }}" ref="submenu[]">
@@ -678,6 +695,16 @@
       "id": "menu",
       "label": "t:settings.menu",
       "default": "main-menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_menu_icons",
+      "label": "t:settings.icons",
+      "default": false
+    },
+    {
+      "type": "paragraph",
+      "content": "t:flamma.menu_icons_info"
     },
     {
       "type": "color_scheme",

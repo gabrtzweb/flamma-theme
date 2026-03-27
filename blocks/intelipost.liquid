@@ -1,0 +1,439 @@
+
+
+{% liquid
+  assign block_settings = block.settings
+  assign product = closest.product
+
+  if request.visual_preview_mode and product == blank
+    assign product = collections.all.products.first
+  endif
+
+  assign unique_id = block.id | replace: '_', '' | downcase
+%}
+
+<div
+  class="shipping-calculator-container spacing-style"
+  style="{% render 'spacing-style', settings: block_settings %}"
+  {{ block.shopify_attributes }}
+>
+  <intelipost-calculator-{{ unique_id }}
+    class="shipping-calculator {% if block_settings.inherit_color_scheme %}color-inherit{% else %}color-{{ block_settings.color_scheme }}{% endif %}"
+    data-origin-zip-code="{{ block_settings.origin_zip_code | escape }}"
+    data-api-key="{{ block.settings.intelipost_api_key | base64_encode | escape }}"
+    data-weight="{{ product.variants.first.weight | default: block.settings.default_weight | divided_by: 1000.0 }}"
+    data-width="{{ product.metafields.custom.width.value | default: block.settings.default_width }}"
+    data-height="{{ product.metafields.custom.height.value | default: block.settings.default_height }}"
+    data-length="{{ product.metafields.custom.length.value | default: block.settings.default_length }}"
+    data-price="{{ product.price }}"
+    data-error-invalid-cep="{{ 'flamma.shipping_calculator.error_invalid_cep' | t }}"
+    data-error-no-options="{{ 'flamma.shipping_calculator.error_no_options' | t }}"
+    data-error-failed="{{ 'flamma.shipping_calculator.error_calculation_failed' | t }}"
+    data-delivery-prefix="{{ 'flamma.shipping_calculator.estimated_delivery_prefix' | t }}"
+    data-checkout-text="{{ 'flamma.shipping_calculator.calculated_at_checkout' | t }}"
+  >
+    <h5 class="shipping-calculator__title {{ block_settings.heading_preset }}">
+      {{ block_settings.heading_text }}
+    </h5>
+
+    <form class="shipping-calculator__form">
+      <input
+        class="shipping-calculator__input input-field"
+        type="text"
+        name="postalCode"
+        placeholder="{{ block_settings.cep_placeholder }}"
+        required
+        maxlength="9"
+      >
+      <button type="submit" class="shipping-calculator__button button {{ block_settings.button_style }}">
+        {{ block.settings.calculate_button_text }}
+      </button>
+    </form>
+
+    <p class="shipping-calculator__error rte" style="display: none;"></p>
+    <div class="shipping-calculator__results" style="display: none;">
+      <div class="shipping-calculator__content rte"></div>
+    </div>
+  </intelipost-calculator-{{ unique_id }}>
+</div>
+
+<script>
+  
+  class IntelipostCalculator{{ unique_id }} extends HTMLElement {
+    constructor() {
+      super();
+      this.form = this.querySelector('.shipping-calculator__form');
+      this.cepInput = this.querySelector('.shipping-calculator__input');
+      this.resultBox = this.querySelector('.shipping-calculator__results');
+      this.resultContent = this.querySelector('.shipping-calculator__content');
+      this.errorMessage = this.querySelector('.shipping-calculator__error');
+      this.form.addEventListener('submit', this.onSubmit.bind(this));
+    }
+
+    async onSubmit(e) {
+      e.preventDefault();
+      const cep = this.cepInput.value.trim().replace('-', '');
+
+      this.resultBox.style.display = 'none';
+      this.errorMessage.style.display = 'none';
+      this.resultContent.innerHTML = '';
+
+      if (cep.length < 8) {
+        this.showError(this.dataset.errorInvalidCep);
+        return;
+      }
+
+      let apiKeyDecoded = '';
+      try {
+        const apiKeyEncoded = this.dataset.apiKey;
+        if (!apiKeyEncoded) {
+          throw new Error("Chave API da Intelipost não configurada no bloco.");
+        }
+        apiKeyDecoded = atob(apiKeyEncoded);
+        if (!apiKeyDecoded) {
+           throw new Error("Falha ao decodificar a chave API (Base64 inválido?).");
+        }
+      } catch (error) {
+        this.showError(`Erro: ${error.message}`);
+        console.error("Erro ao processar API Key:", error);
+        return;
+      }
+
+      const weight = parseFloat(this.dataset.weight);
+      const width = parseFloat(this.dataset.width);
+      const height = parseFloat(this.dataset.height);
+      const length = parseFloat(this.dataset.length);
+      const priceInReais = parseFloat(this.dataset.price) / 100.0;
+
+      try {
+        const response = await fetch('https://api.intelipost.com.br/api/v1/quote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api_key': apiKeyDecoded
+          },
+          body: JSON.stringify({
+            origin_zip_code: this.dataset.originZipCode,
+            destination_zip_code: cep,
+            products_total_price: priceInReais,
+            volumes: [ { weight: weight, volume_type: "BOX", width: width, height: height, length: length } ]
+          })
+        });
+
+        if (!response.ok) {
+           let errorMsg = this.dataset.errorFailed;
+           try {
+             const errorData = await response.json();
+             errorMsg = errorData.messages?.[0]?.text || errorData.message || errorData.error || errorMsg;
+           } catch (jsonError) { /* Ignora */ }
+           throw new Error(`HTTP error! status: ${response.status} - ${errorMsg}`);
+        }
+
+        const data = await response.json();
+        const deliveryOptions = data?.content?.delivery_options;
+
+        if (!deliveryOptions || deliveryOptions.length === 0) {
+          this.showError(this.dataset.errorNoOptions);
+          return;
+        }
+
+        const option = deliveryOptions[0];
+        const days = option?.delivery_estimate_business_days;
+        const cost = option?.final_shipping_cost;
+
+        if (days !== null && days >= 0 && cost !== null && cost >= 0) {
+          const estimatedDate = this.calculateEstimatedDate(days);
+          const displayCost = cost === 0 ? "Grátis" : (cost).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+          let html = '';
+          html += `<p><span class="shipping-result__label">Frete padrão</span> <span class="shipping-result__cost">${displayCost}</span></p>`;
+          html += `<p class="shipping-result__days">em até ${days} ${days > 1 ? 'dias úteis' : 'dia útil'}</p>`;
+          html += `<p class="shipping-result__date">${this.dataset.deliveryPrefix} ${estimatedDate}</p>`;
+
+          this.showResult(html);
+        } else {
+           if (days === null || days < 0) console.warn("Não foi possível encontrar 'delivery_estimate_business_days' válido na resposta:", option);
+           if (cost === null || cost < 0) console.warn("Não foi possível encontrar 'final_shipping_cost' válido na resposta:", option);
+           this.showError(this.dataset.errorNoOptions);
+        }
+
+      } catch (error) {
+        this.showError(error.message || this.dataset.errorFailed);
+        console.error('Erro na requisição Intelipost (direta):', error);
+      }
+    }
+
+    showError(message) {
+      this.errorMessage.textContent = message;
+      this.errorMessage.style.display = 'block';
+    }
+
+    showResult(html) {
+      this.resultContent.innerHTML = html;
+      this.resultBox.style.display = 'block';
+    }
+
+    calculateEstimatedDate(businessDays) {
+      const today = new Date();
+      let count = 0;
+      const numDays = parseInt(businessDays, 10);
+       if (isNaN(numDays) || numDays < 0) {
+           console.error("Número de dias úteis inválido:", businessDays);
+           return "?";
+       }
+      while (count < numDays) {
+        today.setDate(today.getDate() + 1);
+        const dayOfWeek = today.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          count++;
+        }
+      }
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = String(today.getFullYear()).slice(2);
+      return `${day}/${month}/${year}`;
+    }
+  }
+
+  customElements.define('intelipost-calculator-{{ unique_id }}', IntelipostCalculator{{ unique_id }});
+
+</script>
+
+{% stylesheet %}
+  .shipping-calculator {
+    background-color: var(--color-background);
+    border-radius: var(--style-border-radius-buttons-secondary);
+  }
+  .shipping-calculator.color-inherit {
+    background-color: transparent;
+    color: inherit;
+  }
+  .shipping-calculator.color-inherit .shipping-calculator__title {
+    color: inherit;
+  }
+  .shipping-calculator.color-inherit .shipping-calculator__results {
+    border-color: rgb(var(--color-border-rgb) / 0.1);
+    background-color: transparent;
+    color: inherit;
+  }
+  .shipping-calculator.color-inherit .shipping-calculator__error {
+    color: inherit;
+    opacity: 0.7;
+  }
+  .shipping-calculator__title {
+    margin: 0;
+    color: var(--color-foreground);
+  }
+  .shipping-calculator__form {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+  .shipping-calculator__input {
+    flex-grow: 1;
+    width: 60%;
+    padding: 0 1rem;
+    border: var(--style-border-width-inputs) solid var(--color-input-border);
+  }
+  .shipping-calculator__button {
+    width: 40%;
+    flex-shrink: 0;
+  }
+  .shipping-calculator__error {
+    color: var(--color-error);
+    margin: 0;
+  }
+  .shipping-calculator__results {
+    padding: 1.2rem;
+    border: var(--style-border-width-inputs) solid var(--color-border);
+    border-radius: var(--style-border-radius-buttons-secondary);
+    background-color: var(--color-background-secondary);
+    color: var(--color-foreground);
+    font-size: var(--font-size--sm);
+  }
+  .shipping-calculator__results p {
+    margin: 0;
+  }
+  .shipping-calculator__results p:first-child {
+    margin-top: 0;
+  }
+  .shipping-calculator__results p:last-child {
+    margin-bottom: 0;
+  }
+  .shipping-calculator__results p:first-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .shipping-result__days {
+    opacity: 0.8;
+  }
+  .shipping-result__date {
+    opacity: 0.6;
+    margin-top: 0.3rem;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:flamma.shipping_calculator",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "inherit_color_scheme",
+      "label": "t:settings.inherit_color_scheme",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "visible_if": "{{ block.settings.inherit_color_scheme == false }}"
+    },
+    {
+      "type": "text",
+      "id": "heading_text",
+      "label": "t:settings.heading",
+      "default": "Calcular frete e prazo"
+    },
+    {
+      "type": "select",
+      "id": "heading_preset",
+      "label": "t:settings.preset",
+      "options": [
+        { "value": "paragraph", "label": "t:options.paragraph" },
+        { "value": "h1", "label": "t:options.h1" },
+        { "value": "h2", "label": "t:options.h2" },
+        { "value": "h3", "label": "t:options.h3" },
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" }
+      ],
+      "default": "h4"
+    },
+    {
+      "type": "text",
+      "id": "cep_placeholder",
+      "label": "t:flamma.cep_placeholder",
+      "default": "Digite seu CEP"
+    },
+    {
+      "type": "text",
+      "id": "calculate_button_text",
+      "label": "t:flamma.calculate_button_text",
+      "default": "Calcular"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "t:settings.style",
+      "options": [
+        {
+          "value": "button",
+          "label": "t:options.primary"
+        },
+        {
+          "value": "button-secondary",
+          "label": "t:options.secondary"
+        }
+      ],
+      "default": "button-secondary"
+    },
+    {
+      "type": "header",
+      "content": "t:flamma.product_defaults"
+    },
+    {
+      "type": "number",
+      "id": "default_weight",
+      "label": "t:flamma.default_weight",
+      "info": "t:flamma.default_weight_info",
+      "default": 1
+    },
+    {
+      "type": "number",
+      "id": "default_width",
+      "label": "t:flamma.default_width",
+      "default": 20
+    },
+    {
+      "type": "number",
+      "id": "default_height",
+      "label": "t:flamma.default_height",
+      "default": 20
+    },
+    {
+      "type": "number",
+      "id": "default_length",
+      "label": "t:flamma.default_length",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "t:flamma.api_settings"
+    },
+    {
+      "type": "text",
+      "id": "origin_zip_code",
+      "label": "t:flamma.origin_zip_code",
+      "default": "34006-053"
+    },
+    {
+      "type": "text",
+      "id": "intelipost_api_key",
+      "label": "t:flamma.intelipost_api_key_label",
+      "info": "t:flamma.intelipost_api_key_info"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:flamma.shipping_calculator",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

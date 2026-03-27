@@ -1,0 +1,110 @@
+{%- doc -%}
+  The search action button is displayed as a bar with an input field.
+  
+  @param {string} [class] - Additional classes passed from the header.
+  @param {string} [id] - Unique ID passed from the section for accessibility.
+  @param {number} [max_width] - The max width of the search bar from section settings.
+{%- enddoc -%}
+
+<form 
+  action="{{ routes.search_url }}" 
+  method="get" 
+  role="search" 
+  class="search-action search-page-input__parent {% if class != blank %}{{ class | strip }}{% endif %}"
+  style="--search-max-width: {{ max_width | default: 420 }}px;"
+>
+  <search-page-input-component class="header-search-component-wrapper">
+    <label for="HeaderSearchInput-{{ id | default: 'search-bar' }}" class="visually-hidden">
+      {{ 'content.search_input_label' | t }}
+    </label>
+    
+    <span class="svg-wrapper search__icon">
+      {{ 'icon-search.svg' | inline_asset_content }}
+    </span>
+    
+    <input name="type" value="product" type="hidden">
+    
+    <input
+      class="search-page-input"
+      id="HeaderSearchInput-{{ id | default: 'search-bar' }}"
+      type="search"
+      name="q"
+      value="{{ search.terms | escape }}"
+      placeholder="{{ 'content.search_input_label' | t }}"
+      autocomplete="off"
+      oninput="this.closest('search-page-input-component').querySelector('.search__reset-button').style.display = this.value ? 'flex' : 'none'"
+    >
+    
+    <a
+      href="{{ routes.search_url }}?type=product&q="
+      class="search__reset-button"
+      aria-label="{{ 'accessibility.reset_search' | t }}"
+      style="{% if search.terms == blank %}display: none;{% endif %}"
+      onclick="event.preventDefault(); var input = this.closest('search-page-input-component').querySelector('.search-page-input'); input.value=''; this.style.display='none'; input.focus();"
+    >
+      <span class="svg-wrapper search__reset-button-icon">
+        {{ 'icon-reset.svg' | inline_asset_content }}
+      </span>
+      <span class="search__reset-button-text visually-hidden">
+        {{ 'actions.clear' | t }}
+      </span>
+    </a>
+  </search-page-input-component>
+</form>
+
+{% stylesheet %}
+  /* Limit width on desktop so it doesn't push out the logo/cart */
+  #header-component .search-page-input__parent {
+    width: 100%;
+    max-width: var(--search-max-width, 420px);
+    align-items: center;
+    padding: 0px 8px;
+  }
+  #header-component search-page-input-component {
+    margin: unset !important;
+    background: unset !important;
+  }
+  .search-page-input:focus {
+    outline: none;
+  }
+
+  /* Force the input to inherit the transparent header colors */
+  #header-component .search-page-input {
+    height: 44px !important;
+    background-color: transparent !important;
+    color: var(--color-foreground) !important;
+    border-color: var(--color-border) !important;
+  }
+  #header-component .search-page-input::placeholder {
+    color: var(--color-foreground) !important;
+    opacity: 0.9 !important;
+  }
+  #header-component .search__icon,
+  #header-component .search__icon svg,
+  #header-component .search__reset-button,
+  #header-component .search__reset-button svg {
+    color: var(--color-foreground) !important;
+  }
+
+  /* Mobile: When moved to the bottom row, take up the full width */
+  @media screen and (max-width: 749px) {
+    #header-component .header__columns:has(.search-page-input__parent:not(.search-action--hidden-on-drawer)) {
+      grid-template-areas:
+        'leftA leftB center rightA rightB'
+        'search search search search search' !important;
+      row-gap: 0px;
+    }
+    #header-component .header__columns .search-page-input__parent:not(.search-action--hidden-on-drawer) {
+      grid-area: search !important;
+      max-width: 100%;
+      width: 100%;
+      padding: 0px;
+    }
+    #header-component .search-page-input {
+      height: 54px !important;
+      border: 0;
+      border-top: var(--border-bottom-width) solid var(--color-border) !important;
+      border-radius: 0;
+    }
+  }
+{% endstylesheet %}
