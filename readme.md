@@ -1,8 +1,6 @@
 # Flamma Theme
 
-Flamma is a high-performance custom Shopify theme based on the official Horizon architecture. It is built with a strict focus on native web development, Core Web Vitals optimization, and lean engineering.
-
-Functionality and design default to "no" until proven necessary. We avoid bloated third-party apps and polyfills, relying instead on progressive enhancement and the evergreen web.
+Flamma is my custom Shopify theme based on the official Horizon architecture. It is built with a strict focus on native web development, Core Web Vitals optimization, and lean engineering.
 
 ## Core Principles
 
