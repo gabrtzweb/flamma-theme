@@ -1,0 +1,63 @@
+<wishlist-button
+  data-product-id="{{ product_id }}"
+  style="
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: var(--layer-flat);
+    display: block;
+  "
+>
+  <button
+    type="button"
+    class="wishlist-button__btn button-unstyled"
+    aria-label="Toggle Wishlist"
+    on:click="/toggle"
+  >
+    <span class="wishlist-icon--empty">
+      {{ 'icon-heart.svg' | inline_asset_content }}
+    </span>
+    <span class="wishlist-icon--filled" style="display: none;">
+      {{ 'icon-heart-fill.svg' | inline_asset_content }}
+    </span>
+  </button>
+</wishlist-button>
+
+{% stylesheet %}
+  .wishlist-button__btn {
+    height: 22px;
+    width: 22px;
+    cursor: pointer;
+    pointer-events: all;
+    transition: transform var(--hover-transition-duration) var(--hover-transition-timing);
+  }
+
+  .wishlist-button__btn:hover {
+    transform: scale(1.1);
+  }
+
+  .wishlist-button__btn:active {
+    transform: scale(0.8);
+  }
+
+  span.wishlist-icon--empty,
+  span.wishlist-icon--filled {
+    color: var(--color-primary-hover);
+  }
+
+  /* Quick pop animation for when the JS finishes processing */
+  @keyframes heart-pop {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  wishlist-button.is-animating .wishlist-button__btn {
+    animation: heart-pop 0.3s ease-in-out;
+  }
+{% endstylesheet %}
