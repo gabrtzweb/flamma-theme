@@ -8,6 +8,55 @@
  * ------------------------------------------------------------
  */
 {
+  "flamma": {
+    // - Accessibility - //
+    "wishlist": "Favoritos",
+    "support": "Atendimento",
+    "support_sub": "Precisa de ajuda?",
+    "support_subtitle": "Precisa de ajuda? Fale conosco.",
+    "support_contact": "Contato",
+    "support_faq": "Perguntas",
+    "cart_sub": "Finalizar pedido",
+    "account_login": "Minha conta",
+    "account_sub": "Fazer login",
+    "pix_instruction": {
+      "first": "Após finalizar sua compra, o código Pix ficará disponível durante 30 minutos para você pagar no Banco da sua escolha.",
+      "second": "A aprovação do pagamento é imediata. Após aprovado, seu pedido é separado, processado e enviado."
+    },
+    "boleto_instruction": {
+      "first": "Finalize o pedido para gerar o boleto. Copie o código para pagar no seu banco digital ou imprima para pagar em agências e lotéricas.",
+      "second": "A confirmação ocorre em até 1 dia útil. Após aprovado, seu pedido será separado, processado e enviado."
+    },
+    // - Content - //
+    "without_interest": "sem juros",
+    "with_interest": "com juros",
+    "or": "ou",
+    "of": "de",
+    "wishlist_empty": "Sua lista de desejos está vazia no momento.",
+    "wishlist_loading": "Carregando favoritos",
+    "payment_options": "Formas de pagamento",
+    "payment_options_sub_header": "Pagamento protegido por nossa tecnologia de criptografia avançada.",
+    "payment_credit_card": "Cartão de crédito",
+    "payment_installments": "Parcelas",
+    "payment_total": "Total",
+    "payment_pix": "PIX à vista",
+    "payment_boleto": "Boleto à vista",
+    "developed_by": "desenvolvido por",
+    // - Blocks - //
+    "shipping_calculator": {
+      "error_invalid_cep": "Digite um CEP válido.",
+      "error_no_options": "Não foi possível encontrar opções de frete para este CEP.",
+      "error_calculation_failed": "Erro ao calcular o frete. Tente novamente.",
+      "estimated_delivery_prefix": "Data estimada de entrega:",
+      "calculated_at_checkout": "Frete calculado no checkout."
+    },
+    "sale_countdown": {
+      "days": "Dias",
+      "hours": "Horas",
+      "minutes": "Min",
+      "seconds": "Seg"
+    }
+  },
   "blocks": {
     "load_video": "Carregar vídeo: {{ description }}",
     "sold_out": "Esgotado",

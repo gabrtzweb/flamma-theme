@@ -8,6 +8,55 @@
  * ------------------------------------------------------------
  */
 {
+  "flamma": {
+    // - Accessibility - //
+    "wishlist": "Wishlist",
+    "support": "Support",
+    "support_sub": "Need help?",
+    "support_subtitle": "Need help? Talk to us.",
+    "support_contact": "Contact",
+    "support_faq": "Questions",
+    "cart_sub": "Complete order",
+    "account_login": "My account",
+    "account_sub": "Login",
+    "pix_instruction": {
+      "first": "After completing your purchase, the Pix code will be available for 30 minutes for you to pay at the bank of your choice.",
+      "second": "Payment approval is immediate. Once approved, your order is picked, processed, and shipped."
+    },
+    "boleto_instruction": {
+      "first": "Complete the order to generate the payment slip. Copy the code to pay through your digital bank or print it to pay at bank branches and lottery outlets.",
+      "second": "Confirmation takes up to 1 business day. Once approved, your order will be picked, processed, and shipped."
+    },
+    // - Content - //
+    "without_interest": "without interest",
+    "with_interest": "with interest",
+    "or": "or",
+    "of": "of",
+    "wishlist_empty": "Your wishlist is currently empty.",
+    "wishlist_loading": "Wishlist loading",
+    "payment_options": "Payment options",
+    "payment_options_sub_header": "Payment protected by our advanced encryption technology.",
+    "payment_installments": "Installments",
+    "payment_total": "Total",
+    "payment_credit_card": "Credit card",
+    "payment_pix": "Pix cash",
+    "payment_boleto": "Boleto cash",
+    "developed_by": "developed by",
+    // - Blocks - //
+    "shipping_calculator": {
+      "error_invalid_cep": "Please enter a valid CEP.",
+      "error_no_options": "No shipping options could be found for this CEP.",
+      "error_calculation_failed": "Error calculating shipping. Please try again.",
+      "estimated_delivery_prefix": "Estimated delivery date:",
+      "calculated_at_checkout": "Shipping calculated at checkout."
+    },
+    "sale_countdown": {
+      "days": "Days",
+      "hours": "Hours",
+      "minutes": "Mins",
+      "seconds": "Secs"
+    }
+  },
   "accessibility": {
     "account": "Account",
     "cart": "Cart",

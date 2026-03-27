@@ -1,7 +1,9 @@
 {
   "editor.formatOnSave": true,
+  "json.schemaDownload.enable": false,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[liquid]": {
     "editor.defaultFormatter": "Shopify.theme-check-vscode"
-  }
+  },
+  "files.eol": "\n"
 }
