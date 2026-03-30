@@ -1,15 +1,22 @@
 import { Component } from "@theme/component";
 
-// 1. BUBBLE COUNTER UPDATER (For the header actions)
-// Mode 1: The Bubble
+/**
+ * A custom element that displays the wishlist count in a bubble.
+ * Updates when the wishlist changes.
+ */
 class WishlistBubble extends HTMLElement {
+  /** @type {MutationObserver | undefined} */
+  observer;
+
+  /** @type {number} */
+  _lastCount = 0;
+
   connectedCallback() {
-    this.boundUpdate = this.update.bind(this);
-    document.addEventListener("flamma:wishlist:updated", this.boundUpdate);
+    document.addEventListener("flamma:wishlist:updated", this.update);
     this.update();
 
     this.observer = new MutationObserver(() => {
-      this.observer.disconnect();
+      this.observer?.disconnect();
       this.update();
       this.startObserving();
     });
@@ -29,17 +36,20 @@ class WishlistBubble extends HTMLElement {
   }
 
   disconnectedCallback() {
-    document.removeEventListener("flamma:wishlist:updated", this.boundUpdate);
-    if (this.observer) this.observer.disconnect();
+    document.removeEventListener("flamma:wishlist:updated", this.update);
+    this.observer?.disconnect();
   }
 
-  update() {
-    const wishlist = JSON.parse(
-      localStorage.getItem("flamma-wishlist-v1") || "[]",
+  /**
+   * Updates the wishlist bubble display.
+   */
+  update = () => {
+    const wishlist = /** @type {string[]} */ (
+      JSON.parse(localStorage.getItem("flamma-wishlist-v1") || "[]")
     );
     const newCount = wishlist.length;
 
-    this.textContent = newCount;
+    this.textContent = String(newCount);
 
     if (newCount > 0) {
       this.style.display = "flex";
@@ -57,22 +67,26 @@ class WishlistBubble extends HTMLElement {
       }
     }
     this._lastCount = newCount;
-  }
+  };
 }
 
 if (!customElements.get("wishlist-bubble")) {
   customElements.define("wishlist-bubble", WishlistBubble);
 }
 
-// Mode 2: Filled Icon
+/**
+ * A custom element that displays a filled or empty icon based on wishlist state.
+ */
 class WishlistHeaderIcon extends HTMLElement {
+  /** @type {MutationObserver | undefined} */
+  observer;
+
   connectedCallback() {
-    this.boundUpdate = this.update.bind(this);
-    document.addEventListener("flamma:wishlist:updated", this.boundUpdate);
+    document.addEventListener("flamma:wishlist:updated", this.update);
     this.update();
 
     this.observer = new MutationObserver(() => {
-      this.observer.disconnect();
+      this.observer?.disconnect();
       this.update();
       this.startObserving();
     });
@@ -91,49 +105,64 @@ class WishlistHeaderIcon extends HTMLElement {
   }
 
   disconnectedCallback() {
-    document.removeEventListener("flamma:wishlist:updated", this.boundUpdate);
-    if (this.observer) this.observer.disconnect();
+    document.removeEventListener("flamma:wishlist:updated", this.update);
+    this.observer?.disconnect();
   }
 
-  update() {
-    const wishlist = JSON.parse(
-      localStorage.getItem("flamma-wishlist-v1") || "[]",
+  /**
+   * Updates the icon display based on wishlist state.
+   */
+  update = () => {
+    const wishlist = /** @type {string[]} */ (
+      JSON.parse(localStorage.getItem("flamma-wishlist-v1") || "[]")
     );
     const isLiked = wishlist.length > 0;
 
-    const emptyIcon = this.querySelector(".wishlist-icon--empty");
-    const filledIcon = this.querySelector(".wishlist-icon--filled");
+    const emptyIcon = /** @type {HTMLElement | null} */ (
+      this.querySelector(".wishlist-icon--empty")
+    );
+    const filledIcon = /** @type {HTMLElement | null} */ (
+      this.querySelector(".wishlist-icon--filled")
+    );
 
     if (emptyIcon) emptyIcon.style.display = isLiked ? "none" : "";
     if (filledIcon) filledIcon.style.display = isLiked ? "" : "none";
-  }
+  };
 }
 
 if (!customElements.get("wishlist-header-icon")) {
   customElements.define("wishlist-header-icon", WishlistHeaderIcon);
 }
 
-// 2. THE BUTTON COMPONENT (For individual hearts)
+/**
+ * A custom element that toggles a product's wishlist status.
+ *
+ * @typedef {object} WishlistButtonRefs
+ * @property {HTMLElement} [wishlistIcon] - The wishlist icon container
+ *
+ * @extends {Component<WishlistButtonRefs>}
+ */
 class WishlistButton extends Component {
+  /** @type {string | undefined} */
+  productId;
+
   connectedCallback() {
     super.connectedCallback();
     this.productId = this.dataset.productId;
     this.updateIcon();
-    document.addEventListener(
-      "flamma:wishlist:updated",
-      this.updateIcon.bind(this),
-    );
+    document.addEventListener("flamma:wishlist:updated", this.updateIcon);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    document.removeEventListener(
-      "flamma:wishlist:updated",
-      this.updateIcon.bind(this),
-    );
+    document.removeEventListener("flamma:wishlist:updated", this.updateIcon);
   }
 
-  toggle(event) {
+  /**
+   * Toggles the wishlist status of the product.
+   * @param {Event} [event]
+   */
+  toggle = (event) => {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -145,8 +174,8 @@ class WishlistButton extends Component {
     this.classList.add("is-animating");
     setTimeout(() => this.classList.remove("is-animating"), 300);
 
-    let wishlist = JSON.parse(
-      localStorage.getItem("flamma-wishlist-v1") || "[]",
+    let wishlist = /** @type {string[]} */ (
+      JSON.parse(localStorage.getItem("flamma-wishlist-v1") || "[]")
     );
     const index = wishlist.indexOf(this.productId);
 
@@ -158,46 +187,62 @@ class WishlistButton extends Component {
 
     localStorage.setItem("flamma-wishlist-v1", JSON.stringify(wishlist));
     document.dispatchEvent(new CustomEvent("flamma:wishlist:updated"));
-  }
+  };
 
-  updateIcon() {
+  /**
+   * Updates the icon based on current wishlist state.
+   */
+  updateIcon = () => {
     if (!this.productId) return;
-    const wishlist = JSON.parse(
-      localStorage.getItem("flamma-wishlist-v1") || "[]",
+    const wishlist = /** @type {string[]} */ (
+      JSON.parse(localStorage.getItem("flamma-wishlist-v1") || "[]")
     );
     const isLiked = wishlist.includes(this.productId);
 
-    const emptyIcon = this.querySelector(".wishlist-icon--empty");
-    const filledIcon = this.querySelector(".wishlist-icon--filled");
+    const emptyIcon = /** @type {HTMLElement | null} */ (
+      this.querySelector(".wishlist-icon--empty")
+    );
+    const filledIcon = /** @type {HTMLElement | null} */ (
+      this.querySelector(".wishlist-icon--filled")
+    );
 
     if (emptyIcon) emptyIcon.style.display = isLiked ? "none" : "";
     if (filledIcon) filledIcon.style.display = isLiked ? "" : "none";
-  }
+  };
 }
 
 if (!customElements.get("wishlist-button")) {
   customElements.define("wishlist-button", WishlistButton);
 }
 
-// 3. THE SECTION COMPONENT (For the page)
-
+/**
+ * A custom element that displays the wishlist section on a dedicated page.
+ */
 class WishlistSection extends HTMLElement {
+  /** @type {HTMLElement | null} */
+  container;
+
+  /** @type {HTMLElement | null} */
+  emptyState;
+
   connectedCallback() {
     this.container = this.querySelector('[ref="container"]');
     this.emptyState = this.querySelector('[ref="emptyState"]');
-    this.boundLoad = this.loadWishlist.bind(this);
 
-    document.addEventListener("flamma:wishlist:updated", this.boundLoad);
+    document.addEventListener("flamma:wishlist:updated", this.loadWishlist);
     this.loadWishlist();
   }
 
   disconnectedCallback() {
-    document.removeEventListener("flamma:wishlist:updated", this.boundLoad);
+    document.removeEventListener("flamma:wishlist:updated", this.loadWishlist);
   }
 
-  loadWishlist() {
-    const wishlist = JSON.parse(
-      localStorage.getItem("flamma-wishlist-v1") || "[]",
+  /**
+   * Loads and displays the wishlist items.
+   */
+  loadWishlist = () => {
+    const wishlist = /** @type {string[]} */ (
+      JSON.parse(localStorage.getItem("flamma-wishlist-v1") || "[]")
     );
 
     if (wishlist.length === 0) {
@@ -211,11 +256,19 @@ class WishlistSection extends HTMLElement {
       this.container.style.display = "block";
       this.fetchProducts(wishlist);
     }
-  }
+  };
 
-  async fetchProducts(ids) {
+  /**
+   * Fetches and renders the wishlist products.
+   * @param {string[]} ids - Array of product IDs to fetch
+   */
+  fetchProducts = async (ids) => {
     const searchQuery = ids.map((id) => `id:${id}`).join(" OR ");
-    const url = `${window.Shopify.routes.root}search?type=product&q=${encodeURIComponent(searchQuery)}&section_id=${this.dataset.sectionId}`;
+    const sectionId = this.dataset.sectionId ?? "";
+    const url = new URL(Theme.routes.search_url, location.origin);
+    url.searchParams.set("type", "product");
+    url.searchParams.set("q", searchQuery);
+    url.searchParams.set("section_id", sectionId);
 
     try {
       const response = await fetch(url);
@@ -226,25 +279,31 @@ class WishlistSection extends HTMLElement {
       const fetchedGrid = html.querySelector(".js-wishlist-grid");
 
       if (fetchedGrid && fetchedGrid.innerHTML.trim() !== "") {
-        this.container.innerHTML = fetchedGrid.innerHTML;
+        if (this.container) {
+          this.container.innerHTML = fetchedGrid.innerHTML;
 
-        // Force visibility by removing Horizon's scroll animation locks
-        this.container
-          .querySelectorAll(".scroll-trigger, .scroll-trigger--hidden")
-          .forEach((el) => {
-            el.classList.remove("scroll-trigger", "scroll-trigger--hidden");
-            el.style.opacity = "1";
-          });
+          // Force visibility by removing Horizon's scroll animation locks
+          this.container
+            .querySelectorAll(".scroll-trigger, .scroll-trigger--hidden")
+            .forEach((el) => {
+              el.classList.remove("scroll-trigger", "scroll-trigger--hidden");
+              if (el instanceof HTMLElement) {
+                el.style.opacity = "1";
+              }
+            });
+        }
       } else {
         if (this.container) this.container.style.display = "none";
         if (this.emptyState) this.emptyState.style.display = "flex";
       }
     } catch (error) {
       console.error("Wishlist Error:", error);
-      this.container.innerHTML =
-        '<div style="padding: 50px 0; text-align: center;"><p>Something went wrong loading your wishlist. Please refresh the page.</p></div>';
+      if (this.container) {
+        this.container.innerHTML =
+          '<div style="padding: 50px 0; text-align: center;"><p>Something went wrong loading your wishlist. Please refresh the page.</p></div>';
+      }
     }
-  }
+  };
 }
 
 if (!customElements.get("wishlist-section")) {

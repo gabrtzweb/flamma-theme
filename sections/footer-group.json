@@ -144,7 +144,7 @@
           "type": "menu",
           "name": "t:names.menu",
           "settings": {
-            "menu": "about-us",
+            "menu": "footer",
             "heading": "About us",
             "menu_spacing": 8,
             "show_as_accordion": true,
@@ -165,7 +165,7 @@
           "type": "menu",
           "name": "t:names.menu",
           "settings": {
-            "menu": "quick-links",
+            "menu": "customer-service",
             "heading": "Quick links",
             "menu_spacing": 8,
             "show_as_accordion": true,

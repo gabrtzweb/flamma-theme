@@ -65,7 +65,7 @@
       "settings": {
         "speed": 5,
         "show_support": true,
-        "support_url": "https://wa.me/553171677316",
+        "support_url": "https://wa.me/",
         "support_position": "right",
         "show_country": true,
         "country_selector_style": true,
@@ -99,7 +99,7 @@
           "type": "_header-menu",
           "static": true,
           "settings": {
-            "menu": "",
+            "menu": "header",
             "show_menu_icons": true,
             "color_scheme": "scheme-1",
             "type_font_primary_size": "0.875rem",
@@ -121,8 +121,8 @@
       },
       "settings": {
         "logo_position": "left",
-        "menu_position": "center",
-        "menu_row": "bottom",
+        "menu_position": "left",
+        "menu_row": "top",
         "customer_account_menu": "customer-account-main-menu",
         "show_search": true,
         "search_design": "search_bar",
